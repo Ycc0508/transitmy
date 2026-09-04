@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../NearbyStation.dart';
+import '../data/ridership_api.dart';
+import '../models/ridership.dart';
 import 'route_planner_screen.dart';
 import 'profile_screen.dart';
 
@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color primaryBlue = Color(0xFF2F68B1);
   static const Color lightBlue = Color(0xFFEAF3FF);
 
-  List<dynamic> _ridershipData = [];
+  List<Ridership> _ridershipData = [];
   bool _isLoading = true;
   bool _hasError = false;
 
@@ -39,22 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchRidershipData() async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://api.data.gov.my/data-catalogue?id=rapid_rail_ridership&limit=6&sort=-date',
-        ),
-      );
-      if (response.statusCode == 200) {
-        setState(() {
-          _ridershipData = json.decode(response.body);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _hasError = true;
-          _isLoading = false;
-        });
-      }
+      final data = await RidershipApi.fetchRidership();
+      setState(() {
+        _ridershipData = data.take(6).toList();
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _hasError = true;
@@ -181,10 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _ridershipData.length,
               itemBuilder: (context, index) {
-                final Map<String, dynamic> item =
-                    Map<String, dynamic>.from(_ridershipData[index]);
-                final String date = item['date']?.toString() ?? '';
-                item.remove('date');
+                final Ridership item = _ridershipData[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Padding(
@@ -197,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const Icon(Icons.calendar_today, size: 14, color: primaryBlue),
                             const SizedBox(width: 6),
                             Text(
-                              date,
+                              item.date,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: primaryBlue,
@@ -206,27 +192,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ...item.entries.map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.people, size: 14, color: Colors.grey),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    e.key.replaceAll('_', ' ').toUpperCase(),
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
-                                ),
-                                Text(
-                                  e.value?.toString() ?? 'N/A',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _ridershipRow('MRT Kajang', item.mrtKajang),
+                        _ridershipRow('MRT Putrajaya', item.mrtPutrajaya),
+                        _ridershipRow('LRT Kelana Jaya', item.lrtKelanaJaya),
+                        _ridershipRow('LRT Ampang', item.lrtAmpang),
+                        _ridershipRow('Monorail', item.monorail),
+                        _ridershipRow('Rapid Bus KL', item.rapidBusKL),
                       ],
                     ),
                   ),
@@ -235,6 +206,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _ridershipRow(String label, int value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.train, size: 14, color: Colors.grey),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ),
+          Text(
+            value.toString().replaceAllMapped(
+              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+              (m) => '${m[1]},',
+            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 
