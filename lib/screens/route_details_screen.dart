@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/arrival_data.dart';
+import '../data/bus_arrival_data.dart';
 import '../models/route_option.dart';
 
 class RouteDetailsScreen extends StatefulWidget {
@@ -22,12 +23,23 @@ class _RouteDetailsScreenState
   // TRANSITMY COLORS
   // ============================================================
 
-  static const Color primaryBlue = Color(0xFF2F68B1);
-  static const Color darkBlue = Color(0xFF174A87);
-  static const Color lightBlue = Color(0xFFEAF3FF);
-  static const Color backgroundColor = Color(0xFFF7F9FD);
-  static const Color orange = Color(0xFFFF8A65);
-  static const Color green = Color(0xFF279A4B);
+  static const Color primaryBlue =
+  Color(0xFF2F68B1);
+
+  static const Color darkBlue =
+  Color(0xFF174A87);
+
+  static const Color lightBlue =
+  Color(0xFFEAF3FF);
+
+  static const Color backgroundColor =
+  Color(0xFFF7F9FD);
+
+  static const Color orange =
+  Color(0xFFFF8A65);
+
+  static const Color green =
+  Color(0xFF279A4B);
 
   // ============================================================
   // ARRIVAL DATA
@@ -61,9 +73,31 @@ class _RouteDetailsScreenState
     });
 
     try {
-      final arrivals = await ArrivalService.getArrivals(
-        widget.route.from,
-      );
+      late final List<ArrivalData> arrivals;
+
+      // ========================================================
+      // RAPID BUS
+      // ========================================================
+
+      if (widget.route.transport ==
+          'Rapid Bus') {
+        arrivals =
+        await BusArrivalService.getArrivals(
+          widget.route.from,
+          routeId: widget.route.line,
+        );
+      }
+
+      // ========================================================
+      // RAPID RAIL
+      // ========================================================
+
+      else {
+        arrivals =
+        await ArrivalService.getArrivals(
+          widget.route.from,
+        );
+      }
 
       if (!mounted) {
         return;
@@ -74,6 +108,10 @@ class _RouteDetailsScreenState
         _isLoadingArrivals = false;
       });
     } catch (e) {
+      debugPrint(
+        'Arrival loading error: $e',
+      );
+
       if (!mounted) {
         return;
       }
@@ -90,18 +128,22 @@ class _RouteDetailsScreenState
   // ============================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     final route = widget.route;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor:
+      backgroundColor,
 
       // ========================================================
       // APP BAR
       // ========================================================
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor:
+        Colors.white,
 
         elevation: 0,
 
@@ -112,7 +154,6 @@ class _RouteDetailsScreenState
             Icons.arrow_back_ios_new,
             color: darkBlue,
           ),
-
           onPressed: () {
             Navigator.pop(context);
           },
@@ -123,7 +164,8 @@ class _RouteDetailsScreenState
           style: TextStyle(
             color: darkBlue,
             fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontWeight:
+            FontWeight.w700,
           ),
         ),
       ),
@@ -135,14 +177,11 @@ class _RouteDetailsScreenState
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ==================================================
-            // TRANSITMY HEADER
-            // ==================================================
-
             _buildHeader(),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding:
+              const EdgeInsets.fromLTRB(
                 18,
                 22,
                 18,
@@ -162,16 +201,24 @@ class _RouteDetailsScreenState
                     'Your Journey',
                     style: TextStyle(
                       fontSize: 23,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF172033),
+                      fontWeight:
+                      FontWeight.w700,
+                      color:
+                      Color(0xFF172033),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(
+                    height: 12,
+                  ),
 
-                  _buildJourneyCard(route),
+                  _buildJourneyCard(
+                    route,
+                  ),
 
-                  const SizedBox(height: 26),
+                  const SizedBox(
+                    height: 26,
+                  ),
 
                   // ============================================
                   // ROUTE INFORMATION
@@ -181,16 +228,24 @@ class _RouteDetailsScreenState
                     'Route Information',
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF172033),
+                      fontWeight:
+                      FontWeight.w700,
+                      color:
+                      Color(0xFF172033),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(
+                    height: 12,
+                  ),
 
-                  _buildRouteInformation(route),
+                  _buildRouteInformation(
+                    route,
+                  ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(
+                    height: 28,
+                  ),
 
                   // ============================================
                   // ARRIVAL INFORMATION
@@ -203,28 +258,38 @@ class _RouteDetailsScreenState
                           'Arrival Information',
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF172033),
+                            fontWeight:
+                            FontWeight.w700,
+                            color:
+                            Color(0xFF172033),
                           ),
                         ),
                       ),
 
                       Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                        decoration:
+                        BoxDecoration(
+                          color:
+                          Colors.white,
                           borderRadius:
-                          BorderRadius.circular(12),
+                          BorderRadius
+                              .circular(
+                            12,
+                          ),
                         ),
 
-                        child: IconButton(
+                        child:
+                        IconButton(
                           onPressed:
                           _isLoadingArrivals
                               ? null
                               : _loadArrivals,
 
-                          icon: const Icon(
+                          icon:
+                          const Icon(
                             Icons.refresh,
-                            color: primaryBlue,
+                            color:
+                            primaryBlue,
                           ),
 
                           tooltip:
@@ -234,25 +299,30 @@ class _RouteDetailsScreenState
                     ],
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(
+                    height: 4,
+                  ),
 
                   Text(
-                    'Scheduled arrivals at ${route.from}',
-                    style: const TextStyle(
+                    'Scheduled arrivals at '
+                        '${route.from}',
+                    style:
+                    const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF7D8797),
+                      color:
+                      Color(0xFF7D8797),
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(
+                    height: 14,
+                  ),
 
                   _buildArrivalSection(),
 
-                  const SizedBox(height: 26),
-
-                  // ============================================
-                  // DATA SOURCE
-                  // ============================================
+                  const SizedBox(
+                    height: 26,
+                  ),
 
                   _buildDataSourceCard(),
                 ],
@@ -269,22 +339,31 @@ class _RouteDetailsScreenState
   // ============================================================
 
   Widget _buildHeader() {
+    final isBus =
+        widget.route.transport ==
+            'Rapid Bus';
+
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.fromLTRB(
+      padding:
+      const EdgeInsets.fromLTRB(
         20,
         20,
         20,
         24,
       ),
 
-      decoration: const BoxDecoration(
+      decoration:
+      const BoxDecoration(
         color: primaryBlue,
 
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+        borderRadius:
+        BorderRadius.only(
+          bottomLeft:
+          Radius.circular(28),
+          bottomRight:
+          Radius.circular(28),
         ),
       ),
 
@@ -294,20 +373,27 @@ class _RouteDetailsScreenState
             width: 55,
             height: 55,
 
-            decoration: BoxDecoration(
+            decoration:
+            BoxDecoration(
               color: Colors.white,
               borderRadius:
-              BorderRadius.circular(17),
+              BorderRadius.circular(
+                17,
+              ),
             ),
 
-            child: const Icon(
-              Icons.train,
+            child: Icon(
+              isBus
+                  ? Icons.directions_bus
+                  : Icons.train,
               color: primaryBlue,
               size: 31,
             ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(
+            width: 14,
+          ),
 
           const Expanded(
             child: Column(
@@ -318,18 +404,23 @@ class _RouteDetailsScreenState
                 Text(
                   'TransitMY',
                   style: TextStyle(
-                    color: Colors.white,
+                    color:
+                    Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight:
+                    FontWeight.w800,
                   ),
                 ),
 
-                SizedBox(height: 3),
+                SizedBox(
+                  height: 3,
+                ),
 
                 Text(
                   'Your Smart Public Transport Companion',
                   style: TextStyle(
-                    color: Color(0xFFDCEBFF),
+                    color:
+                    Color(0xFFDCEBFF),
                     fontSize: 12,
                   ),
                 ),
@@ -345,24 +436,31 @@ class _RouteDetailsScreenState
   // JOURNEY CARD
   // ============================================================
 
-  Widget _buildJourneyCard(RouteOption route) {
+  Widget _buildJourneyCard(
+      RouteOption route,
+      ) {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.all(20),
+      padding:
+      const EdgeInsets.all(20),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: Colors.white,
 
         borderRadius:
-        BorderRadius.circular(20),
+        BorderRadius.circular(
+          20,
+        ),
 
         boxShadow: [
           BoxShadow(
-            color:
-            Colors.black.withOpacity(0.05),
+            color: Colors.black
+                .withOpacity(0.05),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset:
+            const Offset(0, 4),
           ),
         ],
       ),
@@ -372,24 +470,23 @@ class _RouteDetailsScreenState
         CrossAxisAlignment.start,
 
         children: [
-          // ======================================================
-          // TIMELINE
-          // ======================================================
-
           Column(
             children: [
               Container(
                 width: 34,
                 height: 34,
 
-                decoration: BoxDecoration(
+                decoration:
+                BoxDecoration(
                   color: lightBlue,
-                  shape: BoxShape.circle,
+                  shape:
+                  BoxShape.circle,
                 ),
 
                 child: const Icon(
                   Icons.trip_origin,
-                  color: primaryBlue,
+                  color:
+                  primaryBlue,
                   size: 18,
                 ),
               ),
@@ -399,20 +496,25 @@ class _RouteDetailsScreenState
                 width: 2,
 
                 color:
-                const Color(0xFFBBD2EF),
+                const Color(
+                  0xFFBBD2EF,
+                ),
               ),
 
               Container(
                 width: 34,
                 height: 34,
 
-                decoration: BoxDecoration(
+                decoration:
+                const BoxDecoration(
                   color:
-                  const Color(0xFFFFF0EB),
-                  shape: BoxShape.circle,
+                  Color(0xFFFFF0EB),
+                  shape:
+                  BoxShape.circle,
                 ),
 
-                child: const Icon(
+                child:
+                const Icon(
                   Icons.location_on,
                   color: orange,
                   size: 19,
@@ -421,11 +523,9 @@ class _RouteDetailsScreenState
             ],
           ),
 
-          const SizedBox(width: 14),
-
-          // ======================================================
-          // STATIONS
-          // ======================================================
+          const SizedBox(
+            width: 14,
+          ),
 
           Expanded(
             child: Column(
@@ -435,45 +535,65 @@ class _RouteDetailsScreenState
               children: [
                 const Text(
                   'FROM',
-                  style: TextStyle(
+                  style:
+                  TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8A94A4),
-                    letterSpacing: 0.5,
+                    fontWeight:
+                    FontWeight.w600,
+                    color:
+                    Color(0xFF8A94A4),
+                    letterSpacing:
+                    0.5,
                   ),
                 ),
 
-                const SizedBox(height: 3),
+                const SizedBox(
+                  height: 3,
+                ),
 
                 Text(
                   route.from,
-                  style: const TextStyle(
+                  style:
+                  const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF202B3C),
+                    fontWeight:
+                    FontWeight.w700,
+                    color:
+                    Color(0xFF202B3C),
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(
+                  height: 30,
+                ),
 
                 const Text(
                   'TO',
-                  style: TextStyle(
+                  style:
+                  TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8A94A4),
-                    letterSpacing: 0.5,
+                    fontWeight:
+                    FontWeight.w600,
+                    color:
+                    Color(0xFF8A94A4),
+                    letterSpacing:
+                    0.5,
                   ),
                 ),
 
-                const SizedBox(height: 3),
+                const SizedBox(
+                  height: 3,
+                ),
 
                 Text(
                   route.to,
-                  style: const TextStyle(
+                  style:
+                  const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF202B3C),
+                    fontWeight:
+                    FontWeight.w700,
+                    color:
+                    Color(0xFF202B3C),
                   ),
                 ),
               ],
@@ -488,27 +608,38 @@ class _RouteDetailsScreenState
   // ROUTE INFORMATION
   // ============================================================
 
-  Widget _buildRouteInformation(RouteOption route) {
+  Widget _buildRouteInformation(
+      RouteOption route,
+      ) {
+    final isBus =
+        route.transport ==
+            'Rapid Bus';
+
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.symmetric(
+      padding:
+      const EdgeInsets.symmetric(
         horizontal: 18,
         vertical: 6,
       ),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: Colors.white,
 
         borderRadius:
-        BorderRadius.circular(20),
+        BorderRadius.circular(
+          20,
+        ),
 
         boxShadow: [
           BoxShadow(
-            color:
-            Colors.black.withOpacity(0.05),
+            color: Colors.black
+                .withOpacity(0.05),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset:
+            const Offset(0, 4),
           ),
         ],
       ),
@@ -516,7 +647,9 @@ class _RouteDetailsScreenState
       child: Column(
         children: [
           _detailRow(
-            Icons.train,
+            isBus
+                ? Icons.directions_bus
+                : Icons.train,
             'Transport',
             route.transport,
           ),
@@ -527,7 +660,9 @@ class _RouteDetailsScreenState
             Icons.route,
             'Line',
             route.line.isEmpty
-                ? 'Rapid Rail'
+                ? isBus
+                ? 'Rapid Bus'
+                : 'Rapid Rail'
                 : route.line,
           ),
 
@@ -571,16 +706,24 @@ class _RouteDetailsScreenState
       return Container(
         width: double.infinity,
 
-        padding: const EdgeInsets.all(30),
-
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius:
-          BorderRadius.circular(20),
+        padding:
+        const EdgeInsets.all(
+          30,
         ),
 
-        child: const Center(
-          child: CircularProgressIndicator(
+        decoration:
+        BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+          BorderRadius.circular(
+            20,
+          ),
+        ),
+
+        child:
+        const Center(
+          child:
+          CircularProgressIndicator(
             color: primaryBlue,
           ),
         ),
@@ -591,12 +734,18 @@ class _RouteDetailsScreenState
       return Container(
         width: double.infinity,
 
-        padding: const EdgeInsets.all(24),
+        padding:
+        const EdgeInsets.all(
+          24,
+        ),
 
-        decoration: BoxDecoration(
+        decoration:
+        BoxDecoration(
           color: Colors.white,
           borderRadius:
-          BorderRadius.circular(20),
+          BorderRadius.circular(
+            20,
+          ),
         ),
 
         child: Column(
@@ -605,43 +754,60 @@ class _RouteDetailsScreenState
               width: 55,
               height: 55,
 
-              decoration: BoxDecoration(
+              decoration:
+              BoxDecoration(
                 color:
-                const Color(0xFFFFF0EB),
+                const Color(
+                  0xFFFFF0EB,
+                ),
                 borderRadius:
-                BorderRadius.circular(16),
+                BorderRadius
+                    .circular(
+                  16,
+                ),
               ),
 
-              child: const Icon(
+              child:
+              const Icon(
                 Icons.error_outline,
                 color: orange,
                 size: 30,
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             const Text(
               'Unable to load arrival information.',
-              textAlign: TextAlign.center,
+              textAlign:
+              TextAlign.center,
 
-              style: TextStyle(
+              style:
+              TextStyle(
                 fontWeight:
                 FontWeight.w600,
-                color: Color(0xFF202B3C),
+                color:
+                Color(0xFF202B3C),
               ),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(
+              height: 14,
+            ),
 
             SizedBox(
               height: 44,
 
-              child: ElevatedButton(
-                onPressed: _loadArrivals,
+              child:
+              ElevatedButton(
+                onPressed:
+                _loadArrivals,
 
                 style:
-                ElevatedButton.styleFrom(
+                ElevatedButton
+                    .styleFrom(
                   backgroundColor:
                   primaryBlue,
                   foregroundColor:
@@ -651,12 +817,17 @@ class _RouteDetailsScreenState
                   shape:
                   RoundedRectangleBorder(
                     borderRadius:
-                    BorderRadius.circular(12),
+                    BorderRadius
+                        .circular(
+                      12,
+                    ),
                   ),
                 ),
 
                 child:
-                const Text('Try Again'),
+                const Text(
+                  'Try Again',
+                ),
               ),
             ),
           ],
@@ -668,12 +839,18 @@ class _RouteDetailsScreenState
       return Container(
         width: double.infinity,
 
-        padding: const EdgeInsets.all(24),
+        padding:
+        const EdgeInsets.all(
+          24,
+        ),
 
-        decoration: BoxDecoration(
+        decoration:
+        BoxDecoration(
           color: Colors.white,
           borderRadius:
-          BorderRadius.circular(20),
+          BorderRadius.circular(
+            20,
+          ),
         ),
 
         child: Column(
@@ -682,38 +859,53 @@ class _RouteDetailsScreenState
               width: 55,
               height: 55,
 
-              decoration: BoxDecoration(
+              decoration:
+              BoxDecoration(
                 color: lightBlue,
                 borderRadius:
-                BorderRadius.circular(16),
+                BorderRadius
+                    .circular(
+                  16,
+                ),
               ),
 
-              child: const Icon(
+              child:
+              const Icon(
                 Icons.schedule,
-                color: primaryBlue,
+                color:
+                primaryBlue,
                 size: 30,
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             const Text(
               'No upcoming scheduled arrivals found.',
-              textAlign: TextAlign.center,
+              textAlign:
+              TextAlign.center,
 
-              style: TextStyle(
+              style:
+              TextStyle(
                 fontWeight:
                 FontWeight.w600,
-                color: Color(0xFF202B3C),
+                color:
+                Color(0xFF202B3C),
               ),
             ),
 
-            const SizedBox(height: 5),
+            const SizedBox(
+              height: 5,
+            ),
 
             const Text(
               'Please try another station.',
-              style: TextStyle(
-                color: Color(0xFF8A94A4),
+              style:
+              TextStyle(
+                color:
+                Color(0xFF8A94A4),
                 fontSize: 13,
               ),
             ),
@@ -726,7 +918,9 @@ class _RouteDetailsScreenState
       children: _arrivals
           .map(
             (arrival) =>
-            _buildArrivalCard(arrival),
+            _buildArrivalCard(
+              arrival,
+            ),
       )
           .toList(),
     );
@@ -743,45 +937,54 @@ class _RouteDetailsScreenState
       width: double.infinity,
 
       margin:
-      const EdgeInsets.only(bottom: 12),
+      const EdgeInsets.only(
+        bottom: 12,
+      ),
 
-      padding: const EdgeInsets.all(14),
+      padding:
+      const EdgeInsets.all(
+        14,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: Colors.white,
 
         borderRadius:
-        BorderRadius.circular(18),
+        BorderRadius.circular(
+          18,
+        ),
 
         boxShadow: [
           BoxShadow(
-            color:
-            Colors.black.withOpacity(0.04),
+            color: Colors.black
+                .withOpacity(0.04),
             blurRadius: 10,
-            offset: const Offset(0, 3),
+            offset:
+            const Offset(0, 3),
           ),
         ],
       ),
 
       child: Row(
         children: [
-          // ======================================================
-          // TIME
-          // ======================================================
-
           Container(
             width: 82,
 
             padding:
-            const EdgeInsets.symmetric(
+            const EdgeInsets
+                .symmetric(
               vertical: 11,
               horizontal: 5,
             ),
 
-            decoration: BoxDecoration(
+            decoration:
+            BoxDecoration(
               color: lightBlue,
               borderRadius:
-              BorderRadius.circular(13),
+              BorderRadius.circular(
+                13,
+              ),
             ),
 
             child: Column(
@@ -797,28 +1000,31 @@ class _RouteDetailsScreenState
                     fontSize: 16,
                     fontWeight:
                     FontWeight.w700,
-                    color: Color(0xFF202B3C),
+                    color:
+                    Color(0xFF202B3C),
                   ),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(
+                  height: 4,
+                ),
 
                 const Text(
                   'Arrival',
-                  style: TextStyle(
+                  style:
+                  TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF8A94A4),
+                    color:
+                    Color(0xFF8A94A4),
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(width: 14),
-
-          // ======================================================
-          // LINE
-          // ======================================================
+          const SizedBox(
+            width: 14,
+          ),
 
           Expanded(
             child: Column(
@@ -834,11 +1040,14 @@ class _RouteDetailsScreenState
                     fontSize: 16,
                     fontWeight:
                     FontWeight.w700,
-                    color: Color(0xFF202B3C),
+                    color:
+                    Color(0xFF202B3C),
                   ),
                 ),
 
-                const SizedBox(height: 6),
+                const SizedBox(
+                  height: 6,
+                ),
 
                 Row(
                   children: [
@@ -848,7 +1057,9 @@ class _RouteDetailsScreenState
                       color: green,
                     ),
 
-                    const SizedBox(width: 5),
+                    const SizedBox(
+                      width: 5,
+                    ),
 
                     Text(
                       arrival.status,
@@ -871,15 +1082,23 @@ class _RouteDetailsScreenState
             width: 34,
             height: 34,
 
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FA),
+            decoration:
+            BoxDecoration(
+              color:
+              const Color(
+                0xFFF4F6FA,
+              ),
               borderRadius:
-              BorderRadius.circular(10),
+              BorderRadius.circular(
+                10,
+              ),
             ),
 
-            child: const Icon(
+            child:
+            const Icon(
               Icons.chevron_right,
-              color: Color(0xFF8A94A4),
+              color:
+              Color(0xFF8A94A4),
             ),
           ),
         ],
@@ -895,16 +1114,25 @@ class _RouteDetailsScreenState
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.all(16),
+      padding:
+      const EdgeInsets.all(
+        16,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: lightBlue,
 
         borderRadius:
-        BorderRadius.circular(18),
+        BorderRadius.circular(
+          18,
+        ),
 
         border: Border.all(
-          color: const Color(0xFFD5E5F8),
+          color:
+          const Color(
+            0xFFD5E5F8,
+          ),
         ),
       ),
 
@@ -917,20 +1145,26 @@ class _RouteDetailsScreenState
             width: 38,
             height: 38,
 
-            decoration: BoxDecoration(
+            decoration:
+            BoxDecoration(
               color: Colors.white,
               borderRadius:
-              BorderRadius.circular(11),
+              BorderRadius.circular(
+                11,
+              ),
             ),
 
-            child: const Icon(
+            child:
+            const Icon(
               Icons.info_outline,
               color: primaryBlue,
               size: 21,
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(
+            width: 12,
+          ),
 
           const Expanded(
             child: Text(
@@ -939,10 +1173,12 @@ class _RouteDetailsScreenState
                   'represents scheduled arrival times. '
                   'It is not real-time vehicle tracking.',
 
-              style: TextStyle(
+              style:
+              TextStyle(
                 fontSize: 12.5,
                 height: 1.45,
-                color: Color(0xFF536174),
+                color:
+                Color(0xFF536174),
               ),
             ),
           ),
@@ -973,10 +1209,13 @@ class _RouteDetailsScreenState
             width: 38,
             height: 38,
 
-            decoration: BoxDecoration(
+            decoration:
+            BoxDecoration(
               color: lightBlue,
               borderRadius:
-              BorderRadius.circular(10),
+              BorderRadius.circular(
+                10,
+              ),
             ),
 
             child: Icon(
@@ -986,15 +1225,19 @@ class _RouteDetailsScreenState
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(
+            width: 12,
+          ),
 
           Expanded(
             child: Text(
               title,
 
-              style: const TextStyle(
+              style:
+              const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF7D8797),
+                color:
+                Color(0xFF7D8797),
               ),
             ),
           ),
@@ -1006,13 +1249,16 @@ class _RouteDetailsScreenState
               textAlign:
               TextAlign.right,
 
-              style: TextStyle(
+              style:
+              TextStyle(
                 fontSize: 14,
                 fontWeight:
                 FontWeight.w700,
                 color:
                 valueColor ??
-                    const Color(0xFF202B3C),
+                    const Color(
+                      0xFF202B3C,
+                    ),
               ),
             ),
           ),
@@ -1028,7 +1274,8 @@ class _RouteDetailsScreenState
   Widget _divider() {
     return const Divider(
       height: 1,
-      color: Color(0xFFE8EDF4),
+      color:
+      Color(0xFFE8EDF4),
     );
   }
 }

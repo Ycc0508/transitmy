@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/route_data.dart';
+import '../data/bus_route_data.dart';
 import '../models/route_option.dart';
 import 'route_details_screen.dart';
 
@@ -36,10 +37,10 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   final FocusNode _toFocusNode = FocusNode();
 
   // ============================================================
-  // GTFS STATIONS
+  // STATIONS
   // ============================================================
 
-  List<String> _stations = [];
+  List<StationSuggestion> _stationSuggestions = [];
 
   bool _isLoadingStations = true;
 
@@ -78,25 +79,82 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   }
 
   // ============================================================
-  // LOAD STATIONS
+  // LOAD RAIL + BUS STATIONS
   // ============================================================
 
   Future<void> _loadStations() async {
     try {
-      final stations = await RouteData.getStations();
+      // --------------------------------------------------------
+      // LOAD RAIL
+      // --------------------------------------------------------
+
+      final railStations = await RouteData.getStations();
+
+      // --------------------------------------------------------
+      // LOAD BUS
+      // --------------------------------------------------------
+
+      final busStations = await BusRouteData.getStations();
+
+      // --------------------------------------------------------
+      // CREATE STATION SUGGESTIONS
+      // --------------------------------------------------------
+
+      final List<StationSuggestion> suggestions = [];
+
+      // Add Rail stations
+      for (final station in railStations) {
+        suggestions.add(
+          StationSuggestion(
+            name: station,
+            type: StationType.rail,
+          ),
+        );
+      }
+
+      // Add Bus stations
+      for (final station in busStations) {
+        suggestions.add(
+          StationSuggestion(
+            name: station,
+            type: StationType.bus,
+          ),
+        );
+      }
+
+      // --------------------------------------------------------
+      // SORT
+      // --------------------------------------------------------
+
+      suggestions.sort(
+            (a, b) {
+          final nameCompare =
+          a.name.toLowerCase().compareTo(
+            b.name.toLowerCase(),
+          );
+
+          if (nameCompare != 0) {
+            return nameCompare;
+          }
+
+          return a.type.index.compareTo(
+            b.type.index,
+          );
+        },
+      );
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _stations = stations;
+        _stationSuggestions = suggestions;
         _isLoadingStations = false;
       });
 
       print(
         'Route Planner loaded '
-            '${_stations.length} GTFS stations.',
+            '${_stationSuggestions.length} Rail + Bus station records.',
       );
     } catch (e) {
       if (!mounted) {
@@ -124,6 +182,10 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   Future<void> _findRoute() async {
     final from = _fromController.text.trim();
     final to = _toController.text.trim();
+
+    // ----------------------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------------------
 
     if (from.isEmpty || to.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -155,7 +217,20 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     });
 
     try {
-      final routeResults = await RouteData.findRoutes(
+      // ========================================================
+      // FIND RAPID RAIL ROUTES
+      // ========================================================
+
+      final railResults = await RouteData.findRoutes(
+        from,
+        to,
+      );
+
+      // ========================================================
+      // FIND RAPID BUS ROUTES
+      // ========================================================
+
+      final busResults = await BusRouteData.findRoutes(
         from,
         to,
       );
@@ -165,10 +240,10 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       }
 
       // ========================================================
-      // CONVERT RouteResult -> RouteOption
+      // CONVERT RAIL -> RouteOption
       // ========================================================
 
-      final routeOptions = routeResults.map(
+      final railOptions = railResults.map(
             (route) {
           return RouteOption(
             transport: 'Rapid Rail',
@@ -184,9 +259,64 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         },
       ).toList();
 
+      // ========================================================
+      // CONVERT BUS -> RouteOption
+      // ========================================================
+
+      final busOptions = busResults.map(
+            (route) {
+          return RouteOption(
+            transport: 'Rapid Bus',
+            line: route.lineName,
+            from: from,
+            to: to,
+            duration: route.duration,
+            transfers: 0,
+            nextArrival: 'Scheduled',
+            followingArrival: 'Scheduled',
+            status: 'Scheduled',
+          );
+        },
+      ).toList();
+
+      // ========================================================
+      // COMBINE
+      // ========================================================
+
+      final routeOptions = [
+        ...railOptions,
+        ...busOptions,
+      ];
+
+      // ========================================================
+      // SORT BY DURATION
+      // ========================================================
+
+      routeOptions.sort(
+            (a, b) => a.duration.compareTo(
+          b.duration,
+        ),
+      );
+
       setState(() {
         _routes = routeOptions;
       });
+
+      print(
+        'Rail routes found: ${railOptions.length}',
+      );
+
+      print(
+        'Bus routes found: ${busOptions.length}',
+      );
+
+      print(
+        'Total routes found: ${routeOptions.length}',
+      );
+
+      // ========================================================
+      // NO ROUTE
+      // ========================================================
 
       if (_routes.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -258,29 +388,49 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     required TextEditingController controller,
     required FocusNode focusNode,
   }) {
-    return RawAutocomplete<String>(
+    return RawAutocomplete<StationSuggestion>(
       textEditingController: controller,
+
       focusNode: focusNode,
 
-      displayStringForOption: (station) => station,
-
-      optionsBuilder: (TextEditingValue value) {
-        final query = value.text.trim().toLowerCase();
-
-        if (query.isEmpty) {
-          return const Iterable<String>.empty();
-        }
-
-        return _stations
-            .where(
-              (station) =>
-              station.toLowerCase().contains(query),
-        )
-            .take(10);
+      displayStringForOption: (
+          StationSuggestion station,
+          ) {
+        return station.name;
       },
 
-      onSelected: (String station) {
-        controller.text = station;
+      // ========================================================
+      // OPTIONS
+      // ========================================================
+
+      optionsBuilder: (
+          TextEditingValue value,
+          ) {
+        final query =
+        value.text.trim().toLowerCase();
+
+        if (query.isEmpty) {
+          return const Iterable<
+              StationSuggestion>.empty();
+        }
+
+        return _stationSuggestions
+            .where(
+              (station) => station.name
+              .toLowerCase()
+              .contains(query),
+        )
+            .take(15);
+      },
+
+      // ========================================================
+      // SELECT
+      // ========================================================
+
+      onSelected: (
+          StationSuggestion station,
+          ) {
+        controller.text = station.name;
       },
 
       // ========================================================
@@ -295,6 +445,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
           ) {
         return TextField(
           controller: fieldController,
+
           focusNode: fieldFocusNode,
 
           style: const TextStyle(
@@ -305,6 +456,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
           decoration: InputDecoration(
             labelText: label,
+
             hintText: _isLoadingStations
                 ? 'Loading stations...'
                 : hint,
@@ -320,38 +472,53 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
             prefixIcon: Container(
               margin: const EdgeInsets.all(10),
+
               padding: const EdgeInsets.all(8),
 
               decoration: BoxDecoration(
                 color: lightBlue,
-                borderRadius: BorderRadius.circular(10),
+
+                borderRadius:
+                BorderRadius.circular(10),
               ),
 
               child: Icon(
                 icon,
+
                 color: primaryBlue,
+
                 size: 21,
               ),
             ),
 
             filled: true,
+
             fillColor: Colors.white,
 
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding:
+            const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 17,
             ),
 
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
+            enabledBorder:
+            OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(16),
+
+              borderSide:
+              const BorderSide(
                 color: Color(0xFFDDE5F0),
               ),
             ),
 
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
+            focusedBorder:
+            OutlineInputBorder(
+              borderRadius:
+              BorderRadius.circular(16),
+
+              borderSide:
+              const BorderSide(
                 color: primaryBlue,
                 width: 1.5,
               ),
@@ -370,8 +537,10 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
       optionsViewBuilder: (
           BuildContext context,
-          AutocompleteOnSelected<String> onSelected,
-          Iterable<String> options,
+          AutocompleteOnSelected<
+              StationSuggestion>
+          onSelected,
+          Iterable<StationSuggestion> options,
           ) {
         return Align(
           alignment: Alignment.topLeft,
@@ -379,18 +548,21 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
           child: Material(
             elevation: 8,
 
-            borderRadius: BorderRadius.circular(16),
+            borderRadius:
+            BorderRadius.circular(16),
 
             color: Colors.white,
 
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 280,
+              constraints:
+              const BoxConstraints(
+                maxHeight: 320,
                 maxWidth: 600,
               ),
 
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
+                padding:
+                const EdgeInsets.symmetric(
                   vertical: 8,
                 ),
 
@@ -398,8 +570,16 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
                 itemCount: options.length,
 
-                itemBuilder: (context, index) {
-                  final station = options.elementAt(index);
+                itemBuilder: (
+                    context,
+                    index,
+                    ) {
+                  final station =
+                  options.elementAt(index);
+
+                  final bool isBus =
+                      station.type ==
+                          StationType.bus;
 
                   return InkWell(
                     onTap: () {
@@ -407,45 +587,111 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                     },
 
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding:
+                      const EdgeInsets
+                          .symmetric(
                         horizontal: 16,
-                        vertical: 13,
+                        vertical: 12,
                       ),
 
                       child: Row(
                         children: [
-                          Container(
-                            width: 38,
-                            height: 38,
+                          // ==================================
+                          // ICON
+                          // ==================================
 
-                            decoration: BoxDecoration(
+                          Container(
+                            width: 42,
+                            height: 42,
+
+                            decoration:
+                            BoxDecoration(
                               color: lightBlue,
+
                               borderRadius:
-                              BorderRadius.circular(10),
+                              BorderRadius
+                                  .circular(
+                                11,
+                              ),
                             ),
 
-                            child: const Icon(
-                              Icons.train,
-                              color: primaryBlue,
-                              size: 20,
+                            child: Icon(
+                              isBus
+                                  ? Icons
+                                  .directions_bus
+                                  : Icons.train,
+
+                              color:
+                              primaryBlue,
+
+                              size: 22,
                             ),
                           ),
 
-                          const SizedBox(width: 12),
+                          const SizedBox(
+                            width: 12,
+                          ),
+
+                          // ==================================
+                          // STATION INFORMATION
+                          // ==================================
 
                           Expanded(
-                            child: Text(
-                              station,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment
+                                  .start,
+
+                              children: [
+                                Text(
+                                  station.name,
+
+                                  maxLines: 2,
+
+                                  overflow:
+                                  TextOverflow
+                                      .ellipsis,
+
+                                  style:
+                                  const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight:
+                                    FontWeight
+                                        .w600,
+                                    color:
+                                    Color(
+                                      0xFF202B3C,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(
+                                  height: 3,
+                                ),
+
+                                Text(
+                                  isBus
+                                      ? 'Rapid Bus'
+                                      : 'Rapid Rail',
+
+                                  style:
+                                  const TextStyle(
+                                    fontSize: 11,
+                                    color:
+                                    Color(
+                                      0xFF8A94A4,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
 
                           const Icon(
                             Icons.chevron_right,
-                            color: Color(0xFF9AA5B5),
+
+                            color:
+                            Color(0xFF9AA5B5),
                           ),
                         ],
                       ),
@@ -476,19 +722,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
         scrolledUnderElevation: 0,
 
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: darkBlue,
-          ),
-
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-
         title: const Text(
           'Route Planner',
+
           style: TextStyle(
             color: darkBlue,
             fontSize: 20,
@@ -511,7 +747,8 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             // ==================================================
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding:
+              const EdgeInsets.fromLTRB(
                 18,
                 20,
                 18,
@@ -519,7 +756,8 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               ),
 
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
 
                 children: [
                   // ============================================
@@ -528,26 +766,36 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
                   const Text(
                     'Plan Your Journey',
+
                     style: TextStyle(
                       fontSize: 23,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF172033),
+                      fontWeight:
+                      FontWeight.w700,
+                      color:
+                      Color(0xFF172033),
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(
+                    height: 6,
+                  ),
 
                   Text(
                     _isLoadingStations
                         ? 'Loading Government GTFS stations...'
                         : 'Choose your departure and destination',
-                    style: const TextStyle(
+
+                    style:
+                    const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF7D8797),
+                      color:
+                      Color(0xFF7D8797),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                  ),
 
                   // ============================================
                   // LOCATION CARD
@@ -555,7 +803,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
                   _buildLocationCard(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                  ),
 
                   // ============================================
                   // BUTTONS
@@ -567,7 +817,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                         child: SizedBox(
                           height: 52,
 
-                          child: ElevatedButton.icon(
+                          child:
+                          ElevatedButton
+                              .icon(
                             onPressed:
                             _isLoading ||
                                 _isLoadingStations
@@ -578,10 +830,13 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                                 ? const SizedBox(
                               width: 19,
                               height: 19,
+
                               child:
                               CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
+                                strokeWidth:
+                                2.5,
+                                color:
+                                Colors.white,
                               ),
                             )
                                 : const Icon(
@@ -595,57 +850,82 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                                   : 'Find Route',
                             ),
 
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryBlue,
-                              foregroundColor: Colors.white,
+                            style:
+                            ElevatedButton
+                                .styleFrom(
+                              backgroundColor:
+                              primaryBlue,
+
+                              foregroundColor:
+                              Colors.white,
 
                               disabledBackgroundColor:
-                              const Color(0xFFB8C8DE),
+                              const Color(
+                                0xFFB8C8DE,
+                              ),
 
                               disabledForegroundColor:
                               Colors.white,
 
                               elevation: 0,
 
-                              shape: RoundedRectangleBorder(
+                              shape:
+                              RoundedRectangleBorder(
                                 borderRadius:
-                                BorderRadius.circular(15),
+                                BorderRadius
+                                    .circular(
+                                  15,
+                                ),
                               ),
 
-                              textStyle: const TextStyle(
+                              textStyle:
+                              const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight:
+                                FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(width: 12),
+                      const SizedBox(
+                        width: 12,
+                      ),
 
                       SizedBox(
                         height: 52,
 
-                        child: OutlinedButton(
+                        child:
+                        OutlinedButton(
                           onPressed:
                           _isLoading
                               ? null
                               : _clearRoute,
 
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: primaryBlue,
+                          style:
+                          OutlinedButton
+                              .styleFrom(
+                            foregroundColor:
+                            primaryBlue,
 
-                            side: const BorderSide(
+                            side:
+                            const BorderSide(
                               color: primaryBlue,
                             ),
 
-                            shape: RoundedRectangleBorder(
+                            shape:
+                            RoundedRectangleBorder(
                               borderRadius:
-                              BorderRadius.circular(15),
+                              BorderRadius
+                                  .circular(
+                                15,
+                              ),
                             ),
                           ),
 
-                          child: const Text(
+                          child:
+                          const Text(
                             'Clear',
                           ),
                         ),
@@ -653,7 +933,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(
+                    height: 28,
+                  ),
 
                   // ============================================
                   // RESULTS
@@ -665,44 +947,68 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                         const Expanded(
                           child: Text(
                             'Suggested Routes',
-                            style: TextStyle(
+
+                            style:
+                            TextStyle(
                               fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF172033),
+                              fontWeight:
+                              FontWeight
+                                  .w700,
+                              color:
+                              Color(
+                                0xFF172033,
+                              ),
                             ),
                           ),
                         ),
 
                         Container(
                           padding:
-                          const EdgeInsets.symmetric(
+                          const EdgeInsets
+                              .symmetric(
                             horizontal: 10,
                             vertical: 6,
                           ),
 
-                          decoration: BoxDecoration(
-                            color: lightBlue,
+                          decoration:
+                          BoxDecoration(
+                            color:
+                            lightBlue,
+
                             borderRadius:
-                            BorderRadius.circular(20),
+                            BorderRadius
+                                .circular(
+                              20,
+                            ),
                           ),
 
                           child: Text(
                             '${_routes.length} route'
                                 '${_routes.length == 1 ? '' : 's'}',
-                            style: const TextStyle(
-                              color: primaryBlue,
+
+                            style:
+                            const TextStyle(
+                              color:
+                              primaryBlue,
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontWeight:
+                              FontWeight
+                                  .w600,
                             ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(
+                      height: 12,
+                    ),
 
                     ..._routes.map(
-                          (route) => _buildRouteCard(route),
+                          (route) =>
+                          _buildRouteCard(
+                            route,
+                          ),
                     ),
                   ],
                 ],
@@ -722,42 +1028,59 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.fromLTRB(
+      padding:
+      const EdgeInsets.fromLTRB(
         20,
         20,
         20,
         24,
       ),
 
-      decoration: const BoxDecoration(
+      decoration:
+      const BoxDecoration(
         color: primaryBlue,
 
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+        borderRadius:
+        BorderRadius.only(
+          bottomLeft:
+          Radius.circular(28),
+
+          bottomRight:
+          Radius.circular(28),
         ),
       ),
 
       child: Row(
         children: [
-          // Logo-style icon
+          // Logo
           Container(
             width: 55,
             height: 55,
 
-            decoration: BoxDecoration(
+            decoration:
+            BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(17),
+
+              borderRadius:
+              BorderRadius.circular(
+                17,
+              ),
             ),
 
-            child: const Icon(
+            child:
+            const Icon(
               Icons.train,
-              color: primaryBlue,
+
+              color:
+              primaryBlue,
+
               size: 31,
             ),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(
+            width: 14,
+          ),
 
           const Expanded(
             child: Column(
@@ -767,19 +1090,31 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               children: [
                 Text(
                   'TransitMY',
-                  style: TextStyle(
-                    color: Colors.white,
+
+                  style:
+                  TextStyle(
+                    color:
+                    Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight:
+                    FontWeight
+                        .w800,
                   ),
                 ),
 
-                SizedBox(height: 3),
+                SizedBox(
+                  height: 3,
+                ),
 
                 Text(
                   'Your Smart Public Transport Companion',
-                  style: TextStyle(
-                    color: Color(0xFFDCEBFF),
+
+                  style:
+                  TextStyle(
+                    color:
+                    Color(
+                      0xFFDCEBFF,
+                    ),
                     fontSize: 12,
                   ),
                 ),
@@ -799,44 +1134,79 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.all(16),
+      padding:
+      const EdgeInsets.all(
+        16,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+        BorderRadius.circular(
+          20,
+        ),
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color:
+            Colors.black.withOpacity(
+              0.05,
+            ),
+
             blurRadius: 12,
-            offset: const Offset(0, 4),
+
+            offset:
+            const Offset(
+              0,
+              4,
+            ),
           ),
         ],
       ),
 
       child: Stack(
-        alignment: Alignment.centerRight,
+        alignment:
+        Alignment.centerRight,
 
         children: [
           Column(
             children: [
               _buildStationField(
                 label: 'From',
-                hint: 'Search departure station',
-                icon: Icons.trip_origin,
-                controller: _fromController,
-                focusNode: _fromFocusNode,
+
+                hint:
+                'Search departure station',
+
+                icon:
+                Icons.trip_origin,
+
+                controller:
+                _fromController,
+
+                focusNode:
+                _fromFocusNode,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
               _buildStationField(
                 label: 'To',
-                hint: 'Search destination station',
-                icon: Icons.location_on,
-                controller: _toController,
-                focusNode: _toFocusNode,
+
+                hint:
+                'Search destination station',
+
+                icon:
+                Icons.location_on,
+
+                controller:
+                _toController,
+
+                focusNode:
+                _toFocusNode,
               ),
             ],
           ),
@@ -847,31 +1217,46 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             top: 48,
 
             child: Material(
-              color: Colors.white,
+              color:
+              Colors.white,
 
               elevation: 3,
 
-              shape: const CircleBorder(),
+              shape:
+              const CircleBorder(),
 
               child: InkWell(
-                onTap: _swapStations,
+                onTap:
+                _swapStations,
 
-                customBorder: const CircleBorder(),
+                customBorder:
+                const CircleBorder(),
 
                 child: Container(
                   width: 42,
                   height: 42,
 
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFDDE5F0),
+                  decoration:
+                  BoxDecoration(
+                    shape:
+                    BoxShape.circle,
+
+                    border:
+                    Border.all(
+                      color:
+                      const Color(
+                        0xFFDDE5F0,
+                      ),
                     ),
                   ),
 
-                  child: const Icon(
+                  child:
+                  const Icon(
                     Icons.swap_vert,
-                    color: primaryBlue,
+
+                    color:
+                    primaryBlue,
+
                     size: 22,
                   ),
                 ),
@@ -887,34 +1272,58 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   // ROUTE CARD
   // ============================================================
 
-  Widget _buildRouteCard(RouteOption route) {
+  Widget _buildRouteCard(
+      RouteOption route,
+      ) {
+    final bool isBus =
+        route.transport ==
+            'Rapid Bus';
+
     return Container(
       width: double.infinity,
 
-      margin: const EdgeInsets.only(
+      margin:
+      const EdgeInsets.only(
         bottom: 16,
       ),
 
-      decoration: BoxDecoration(
+      decoration:
+      BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+        BorderRadius.circular(
+          20,
+        ),
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color:
+            Colors.black.withOpacity(
+              0.05,
+            ),
+
             blurRadius: 12,
-            offset: const Offset(0, 4),
+
+            offset:
+            const Offset(
+              0,
+              4,
+            ),
           ),
         ],
       ),
 
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding:
+        const EdgeInsets.all(
+          18,
+        ),
 
         child: Column(
           crossAxisAlignment:
-          CrossAxisAlignment.start,
+          CrossAxisAlignment
+              .start,
 
           children: [
             // ==================================================
@@ -927,46 +1336,76 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                   width: 48,
                   height: 48,
 
-                  decoration: BoxDecoration(
-                    color: lightBlue,
+                  decoration:
+                  BoxDecoration(
+                    color:
+                    lightBlue,
+
                     borderRadius:
-                    BorderRadius.circular(14),
+                    BorderRadius
+                        .circular(
+                      14,
+                    ),
                   ),
 
-                  child: const Icon(
-                    Icons.train,
-                    color: primaryBlue,
+                  child: Icon(
+                    isBus
+                        ? Icons
+                        .directions_bus
+                        : Icons.train,
+
+                    color:
+                    primaryBlue,
+
                     size: 25,
                   ),
                 ),
 
-                const SizedBox(width: 12),
+                const SizedBox(
+                  width: 12,
+                ),
 
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    CrossAxisAlignment
+                        .start,
 
                     children: [
                       Text(
                         route.transport,
-                        style: const TextStyle(
+
+                        style:
+                        const TextStyle(
                           fontSize: 16,
                           fontWeight:
-                          FontWeight.w700,
-                          color: Color(0xFF172033),
+                          FontWeight
+                              .w700,
+                          color:
+                          Color(
+                            0xFF172033,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 4),
+                      const SizedBox(
+                        height: 4,
+                      ),
 
                       Text(
                         route.line.isEmpty
-                            ? 'Rapid Rail'
+                            ? (isBus
+                            ? 'Rapid Bus'
+                            : 'Rapid Rail')
                             : route.line,
-                        style: const TextStyle(
+
+                        style:
+                        const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF7D8797),
+                          color:
+                          Color(
+                            0xFF7D8797,
+                          ),
                         ),
                       ),
                     ],
@@ -975,30 +1414,51 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
                 Container(
                   padding:
-                  const EdgeInsets.symmetric(
+                  const EdgeInsets
+                      .symmetric(
                     horizontal: 9,
                     vertical: 5,
                   ),
 
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF8EF),
+                  decoration:
+                  BoxDecoration(
+                    color:
+                    const Color(
+                      0xFFEAF8EF,
+                    ),
+
                     borderRadius:
-                    BorderRadius.circular(20),
+                    BorderRadius
+                        .circular(
+                      20,
+                    ),
                   ),
 
-                  child: const Text(
+                  child:
+                  const Text(
                     'Scheduled',
-                    style: TextStyle(
-                      color: Color(0xFF279A4B),
+
+                    style:
+                    TextStyle(
+                      color:
+                      Color(
+                        0xFF279A4B,
+                      ),
+
                       fontSize: 11,
-                      fontWeight: FontWeight.w600,
+
+                      fontWeight:
+                      FontWeight
+                          .w600,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(
+              height: 18,
+            ),
 
             // ==================================================
             // JOURNEY
@@ -1006,83 +1466,126 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
             Row(
               crossAxisAlignment:
-              CrossAxisAlignment.start,
+              CrossAxisAlignment
+                  .start,
 
               children: [
                 Column(
                   children: [
                     const Icon(
                       Icons.trip_origin,
-                      color: primaryBlue,
+
+                      color:
+                      primaryBlue,
+
                       size: 19,
                     ),
 
                     Container(
                       height: 28,
                       width: 2,
+
                       margin:
-                      const EdgeInsets.symmetric(
+                      const EdgeInsets
+                          .symmetric(
                         vertical: 3,
                       ),
+
                       color:
-                      const Color(0xFFBBD2EF),
+                      const Color(
+                        0xFFBBD2EF,
+                      ),
                     ),
 
                     const Icon(
                       Icons.location_on,
-                      color: orange,
+
+                      color:
+                      orange,
+
                       size: 20,
                     ),
                   ],
                 ),
 
-                const SizedBox(width: 12),
+                const SizedBox(
+                  width: 12,
+                ),
 
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    CrossAxisAlignment
+                        .start,
 
                     children: [
                       const Text(
                         'From',
-                        style: TextStyle(
+
+                        style:
+                        TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8A94A4),
+                          color:
+                          Color(
+                            0xFF8A94A4,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 2),
+                      const SizedBox(
+                        height: 2,
+                      ),
 
                       Text(
                         route.from,
-                        style: const TextStyle(
+
+                        style:
+                        const TextStyle(
                           fontSize: 15,
                           fontWeight:
-                          FontWeight.w600,
-                          color: Color(0xFF202B3C),
+                          FontWeight
+                              .w600,
+                          color:
+                          Color(
+                            0xFF202B3C,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 18),
+                      const SizedBox(
+                        height: 18,
+                      ),
 
                       const Text(
                         'To',
-                        style: TextStyle(
+
+                        style:
+                        TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF8A94A4),
+                          color:
+                          Color(
+                            0xFF8A94A4,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 2),
+                      const SizedBox(
+                        height: 2,
+                      ),
 
                       Text(
                         route.to,
-                        style: const TextStyle(
+
+                        style:
+                        const TextStyle(
                           fontSize: 15,
                           fontWeight:
-                          FontWeight.w600,
-                          color: Color(0xFF202B3C),
+                          FontWeight
+                              .w600,
+                          color:
+                          Color(
+                            0xFF202B3C,
+                          ),
                         ),
                       ),
                     ],
@@ -1091,13 +1594,18 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               ],
             ),
 
-            const SizedBox(height: 18),
-
-            const Divider(
-              color: Color(0xFFE8EDF4),
+            const SizedBox(
+              height: 18,
             ),
 
-            const SizedBox(height: 14),
+            const Divider(
+              color:
+              Color(0xFFE8EDF4),
+            ),
+
+            const SizedBox(
+              height: 14,
+            ),
 
             // ==================================================
             // INFORMATION
@@ -1108,7 +1616,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 Expanded(
                   child: _infoItem(
                     Icons.access_time,
+
                     '${route.duration} min',
+
                     'Duration',
                   ),
                 ),
@@ -1116,13 +1626,19 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 Container(
                   width: 1,
                   height: 35,
-                  color: const Color(0xFFE3E8F0),
+
+                  color:
+                  const Color(
+                    0xFFE3E8F0,
+                  ),
                 ),
 
                 Expanded(
                   child: _infoItem(
                     Icons.swap_horiz,
+
                     '${route.transfers}',
+
                     'Transfer',
                   ),
                 ),
@@ -1130,20 +1646,28 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 Container(
                   width: 1,
                   height: 35,
-                  color: const Color(0xFFE3E8F0),
+
+                  color:
+                  const Color(
+                    0xFFE3E8F0,
+                  ),
                 ),
 
                 Expanded(
                   child: _infoItem(
                     Icons.schedule,
+
                     route.nextArrival,
+
                     'Arrival',
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(
+              height: 16,
+            ),
 
             // ==================================================
             // VIEW DETAILS
@@ -1154,13 +1678,15 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
               height: 46,
 
-              child: ElevatedButton(
+              child:
+              ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
 
                     MaterialPageRoute(
-                      builder: (context) =>
+                      builder:
+                          (context) =>
                           RouteDetailsScreen(
                             route: route,
                           ),
@@ -1168,32 +1694,49 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                   );
                 },
 
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
+                style:
+                ElevatedButton
+                    .styleFrom(
+                  backgroundColor:
+                  primaryBlue,
+
+                  foregroundColor:
+                  Colors.white,
 
                   elevation: 0,
 
-                  shape: RoundedRectangleBorder(
+                  shape:
+                  RoundedRectangleBorder(
                     borderRadius:
-                    BorderRadius.circular(13),
+                    BorderRadius
+                        .circular(
+                      13,
+                    ),
                   ),
                 ),
 
-                child: const Row(
+                child:
+                const Row(
                   mainAxisAlignment:
-                  MainAxisAlignment.center,
+                  MainAxisAlignment
+                      .center,
 
                   children: [
                     Text(
                       'View Route Details',
-                      style: TextStyle(
+
+                      style:
+                      TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight:
+                        FontWeight
+                            .w600,
                       ),
                     ),
 
-                    SizedBox(width: 7),
+                    SizedBox(
+                      width: 7,
+                    ),
 
                     Icon(
                       Icons.arrow_forward,
@@ -1222,35 +1765,74 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       children: [
         Icon(
           icon,
+
           size: 19,
-          color: primaryBlue,
+
+          color:
+          primaryBlue,
         ),
 
-        const SizedBox(height: 5),
+        const SizedBox(
+          height: 5,
+        ),
 
         Text(
           value,
-          textAlign: TextAlign.center,
 
-          style: const TextStyle(
+          textAlign:
+          TextAlign.center,
+
+          style:
+          const TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF202B3C),
+            fontWeight:
+            FontWeight.w700,
+            color:
+            Color(0xFF202B3C),
           ),
         ),
 
-        const SizedBox(height: 2),
+        const SizedBox(
+          height: 2,
+        ),
 
         Text(
           label,
-          textAlign: TextAlign.center,
 
-          style: const TextStyle(
+          textAlign:
+          TextAlign.center,
+
+          style:
+          const TextStyle(
             fontSize: 11,
-            color: Color(0xFF8A94A4),
+            color:
+            Color(0xFF8A94A4),
           ),
         ),
       ],
     );
   }
+}
+
+// ================================================================
+// STATION TYPE
+// ================================================================
+
+enum StationType {
+  rail,
+  bus,
+}
+
+// ================================================================
+// STATION SUGGESTION
+// ================================================================
+
+class StationSuggestion {
+  final String name;
+  final StationType type;
+
+  const StationSuggestion({
+    required this.name,
+    required this.type,
+  });
 }
