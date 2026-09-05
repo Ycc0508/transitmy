@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -16,14 +17,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   static const Color primaryBlue = Color(0xFF2F68B1);
 
-  void _login() {
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(email: _emailCtrl.text),
-        ),
-      );
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('email') ?? '';
+      final savedPassword = prefs.getString('password') ?? '';
+      final savedName = prefs.getString('name') ?? '';
+      final savedPhone = prefs.getString('phone') ?? '';
+      if (savedEmail == _emailCtrl.text.trim() && savedPassword == _passwordCtrl.text) {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(
+                email: savedEmail,
+                name: savedName,
+                phone: savedPhone,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid email or password')),
+          );
+        }
+      }
     }
   }
 

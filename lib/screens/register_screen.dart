@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -18,19 +19,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   static const Color primaryBlue = Color(0xFF2F68B1);
 
-  void _register() {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(
-            email: _emailCtrl.text,
-            name: _nameCtrl.text,
-            phone: _phoneCtrl.text,
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('name', _nameCtrl.text.trim());
+      await prefs.setString('email', _emailCtrl.text.trim());
+      await prefs.setString('phone', _phoneCtrl.text.trim());
+      await prefs.setString('password', _passwordCtrl.text);
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              email: _emailCtrl.text.trim(),
+              name: _nameCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim(),
+            ),
           ),
-        ),
-        (route) => false,
-      );
+          (route) => false,
+        );
+      }
     }
   }
 
