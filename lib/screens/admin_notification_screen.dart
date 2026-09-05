@@ -246,8 +246,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
         ),
         title: Text(item.title),
         subtitle: Text(
-          '${item.type} • ${item.route}
-${item.message}',
+          '${item.type} • ${item.route}\n${item.message}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
