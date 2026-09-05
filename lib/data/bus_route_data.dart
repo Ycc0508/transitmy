@@ -17,10 +17,6 @@ class BusRouteData {
   static final Map<String, Set<String>> _stopRoutes = {};
   static final Map<String, List<_BusStopTime>> _tripStopTimes = {};
 
-  // ============================================================
-  // LOAD DATA
-  // ============================================================
-
   static Future<void> loadData() async {
     if (_loaded) {
       return;
@@ -57,20 +53,12 @@ class BusRouteData {
       _stopRoutes.clear();
       _tripStopTimes.clear();
 
-      // ----------------------------------------------------------
-      // STOPS
-      // ----------------------------------------------------------
-
       _parseStops(
         _readFile(
           archive,
           'stops.txt',
         ),
       );
-
-      // ----------------------------------------------------------
-      // ROUTES
-      // ----------------------------------------------------------
 
       _parseRoutes(
         _readFile(
@@ -79,10 +67,6 @@ class BusRouteData {
         ),
       );
 
-      // ----------------------------------------------------------
-      // TRIPS
-      // ----------------------------------------------------------
-
       _parseTrips(
         _readFile(
           archive,
@@ -90,20 +74,12 @@ class BusRouteData {
         ),
       );
 
-      // ----------------------------------------------------------
-      // STOP TIMES
-      // ----------------------------------------------------------
-
       _parseStopTimes(
         _readFile(
           archive,
           'stop_times.txt',
         ),
       );
-
-      // ----------------------------------------------------------
-      // INDEXES
-      // ----------------------------------------------------------
 
       _buildIndexes();
 
@@ -156,13 +132,7 @@ class BusRouteData {
     }
   }
 
-  // ============================================================
-  // GET BUS STATIONS
-  // ============================================================
-
   static Future<List<String>> getStations() async {
-    // IMPORTANT:
-    // Bus data must be loaded before returning stations.
     await loadData();
 
     final names = <String>{};
@@ -191,10 +161,6 @@ class BusRouteData {
     return result;
   }
 
-  // ============================================================
-  // FIND BUS ROUTES
-  // ============================================================
-
   static Future<List<BusRouteResult>> findRoutes(
       String from,
       String to,
@@ -211,15 +177,7 @@ class BusRouteData {
       'BUS TO: $to',
     );
 
-    // ----------------------------------------------------------
-    // FIND ORIGIN
-    // ----------------------------------------------------------
-
     final fromStop = _findStop(from);
-
-    // ----------------------------------------------------------
-    // FIND DESTINATION
-    // ----------------------------------------------------------
 
     final toStop = _findStop(to);
 
@@ -247,17 +205,9 @@ class BusRouteData {
       return [];
     }
 
-    // ----------------------------------------------------------
-    // ROUTES SERVING ORIGIN
-    // ----------------------------------------------------------
-
     final fromRoutes =
         _stopRoutes[fromStop.id] ??
             <String>{};
-
-    // ----------------------------------------------------------
-    // ROUTES SERVING DESTINATION
-    // ----------------------------------------------------------
 
     final toRoutes =
         _stopRoutes[toStop.id] ??
@@ -271,10 +221,6 @@ class BusRouteData {
       'BUS TO ROUTES: ${toRoutes.length}',
     );
 
-    // ----------------------------------------------------------
-    // COMMON ROUTES
-    // ----------------------------------------------------------
-
     final commonRoutes =
     fromRoutes.intersection(
       toRoutes,
@@ -287,10 +233,6 @@ class BusRouteData {
 
     final results =
     <BusRouteResult>[];
-
-    // ----------------------------------------------------------
-    // CREATE RESULTS
-    // ----------------------------------------------------------
 
     for (final routeId in commonRoutes) {
       final route =
@@ -307,15 +249,6 @@ class BusRouteData {
         toStop.id,
       );
 
-      // --------------------------------------------------------
-      // IMPORTANT:
-      //
-      // The GTFS route definitely serves both stops.
-      //
-      // If a usable scheduled duration cannot be calculated,
-      // return a fallback duration so the route is still shown.
-      // --------------------------------------------------------
-
       final finalDuration =
           duration ?? 20;
 
@@ -330,10 +263,6 @@ class BusRouteData {
         ),
       );
     }
-
-    // ----------------------------------------------------------
-    // SORT BY DURATION
-    // ----------------------------------------------------------
 
     results.sort(
           (a, b) => a.duration.compareTo(
@@ -361,10 +290,6 @@ class BusRouteData {
     return results;
   }
 
-  // ============================================================
-  // FIND BUS STOP
-  // ============================================================
-
   static _BusStop? _findStop(
       String input,
       ) {
@@ -375,20 +300,12 @@ class BusRouteData {
       return null;
     }
 
-    // ----------------------------------------------------------
-    // 1. EXACT MATCH
-    // ----------------------------------------------------------
-
     for (final stop in _stops) {
       if (_normalise(stop.name) ==
           query) {
         return stop;
       }
     }
-
-    // ----------------------------------------------------------
-    // 2. CONTAINS MATCH
-    // ----------------------------------------------------------
 
     for (final stop in _stops) {
       final name =
@@ -399,10 +316,6 @@ class BusRouteData {
         return stop;
       }
     }
-
-    // ----------------------------------------------------------
-    // 3. TOKEN MATCH
-    // ----------------------------------------------------------
 
     final queryTokens = query
         .split(' ')
@@ -442,20 +355,12 @@ class BusRouteData {
     return bestStop;
   }
 
-  // ============================================================
-  // CALCULATE DURATION
-  // ============================================================
-
   static int? _calculateDuration(
       String routeId,
       String fromStopId,
       String toStopId,
       ) {
     int? bestDuration;
-
-    // ----------------------------------------------------------
-    // CHECK EVERY TRIP OF THIS ROUTE
-    // ----------------------------------------------------------
 
     for (final trip in _trips) {
       if (trip.routeId != routeId) {
@@ -472,10 +377,6 @@ class BusRouteData {
 
       _BusStopTime? fromTime;
       _BusStopTime? toTime;
-
-      // --------------------------------------------------------
-      // FIND FROM / TO
-      // --------------------------------------------------------
 
       for (final time in times) {
         if (time.stopId ==
@@ -494,18 +395,10 @@ class BusRouteData {
         continue;
       }
 
-      // --------------------------------------------------------
-      // DESTINATION MUST COME AFTER ORIGIN
-      // --------------------------------------------------------
-
       if (toTime.sequence <=
           fromTime.sequence) {
         continue;
       }
-
-      // --------------------------------------------------------
-      // START TIME
-      // --------------------------------------------------------
 
       final start =
       _parseTime(
@@ -513,10 +406,6 @@ class BusRouteData {
             ? fromTime.departureTime
             : fromTime.arrivalTime,
       );
-
-      // --------------------------------------------------------
-      // END TIME
-      // --------------------------------------------------------
 
       final end =
       _parseTime(
@@ -533,8 +422,6 @@ class BusRouteData {
       int duration =
           end - start;
 
-      // GTFS supports values such as
-      // 24:30:00 for service after midnight.
       if (duration < 0) {
         duration += 24 * 60;
       }
@@ -542,10 +429,6 @@ class BusRouteData {
       if (duration <= 0) {
         continue;
       }
-
-      // --------------------------------------------------------
-      // KEEP SHORTEST VALID DURATION
-      // --------------------------------------------------------
 
       if (bestDuration == null ||
           duration < bestDuration) {
@@ -555,10 +438,6 @@ class BusRouteData {
 
     return bestDuration;
   }
-
-  // ============================================================
-  // READ ZIP FILE
-  // ============================================================
 
   static String _readFile(
       Archive archive,
@@ -577,10 +456,6 @@ class BusRouteData {
       file.content as List<int>,
     );
   }
-
-  // ============================================================
-  // PARSE STOPS
-  // ============================================================
 
   static void _parseStops(
       String content,
@@ -636,10 +511,6 @@ class BusRouteData {
       );
     }
   }
-
-  // ============================================================
-  // PARSE ROUTES
-  // ============================================================
 
   static void _parseRoutes(
       String content,
@@ -716,10 +587,6 @@ class BusRouteData {
     }
   }
 
-  // ============================================================
-  // PARSE TRIPS
-  // ============================================================
-
   static void _parseTrips(
       String content,
       ) {
@@ -774,10 +641,6 @@ class BusRouteData {
       );
     }
   }
-
-  // ============================================================
-  // PARSE STOP TIMES
-  // ============================================================
 
   static void _parseStopTimes(
       String content,
@@ -868,26 +731,14 @@ class BusRouteData {
     }
   }
 
-  // ============================================================
-  // BUILD INDEXES
-  // ============================================================
-
   static void _buildIndexes() {
     final tripRouteMap =
     <String, String>{};
-
-    // ----------------------------------------------------------
-    // TRIP -> ROUTE
-    // ----------------------------------------------------------
 
     for (final trip in _trips) {
       tripRouteMap[trip.tripId] =
           trip.routeId;
     }
-
-    // ----------------------------------------------------------
-    // STOP -> ROUTES
-    // ----------------------------------------------------------
 
     for (final stopTime in _stopTimes) {
       final routeId =
@@ -905,10 +756,6 @@ class BusRouteData {
       )
           .add(routeId);
 
-      // --------------------------------------------------------
-      // TRIP -> STOP TIMES
-      // --------------------------------------------------------
-
       _tripStopTimes
           .putIfAbsent(
         stopTime.tripId,
@@ -916,10 +763,6 @@ class BusRouteData {
       )
           .add(stopTime);
     }
-
-    // ----------------------------------------------------------
-    // SORT STOP TIMES BY SEQUENCE
-    // ----------------------------------------------------------
 
     for (final times
     in _tripStopTimes.values) {
@@ -931,10 +774,6 @@ class BusRouteData {
       );
     }
   }
-
-  // ============================================================
-  // ROUTE
-  // ============================================================
 
   static _BusRoute? _findRoute(
       String routeId,
@@ -961,10 +800,6 @@ class BusRouteData {
 
     return route.id;
   }
-
-  // ============================================================
-  // TIME
-  // ============================================================
 
   static int? _parseTime(
       String value,
@@ -996,41 +831,32 @@ class BusRouteData {
         (second / 60).round();
   }
 
-  // ============================================================
-  // NORMALISE STATION NAME
-  // ============================================================
-
   static String _normalise(
       String value,
       ) {
     var result =
     value.toUpperCase();
 
-    // Remove text inside brackets.
     result = result.replaceAll(
       RegExp(r'\([^)]*\)'),
       ' ',
     );
 
-    // Remove OPP.
     result = result.replaceAll(
       RegExp(r'\bOPP\b'),
       ' ',
     );
 
-    // Remove OPPOSITE.
     result = result.replaceAll(
       RegExp(r'\bOPPOSITE\b'),
       ' ',
     );
 
-    // Replace punctuation.
     result = result.replaceAll(
       RegExp(r'[^A-Z0-9]+'),
       ' ',
     );
 
-    // Remove extra spaces.
     result = result.replaceAll(
       RegExp(r'\s+'),
       ' ',
@@ -1038,10 +864,6 @@ class BusRouteData {
 
     return result.trim();
   }
-
-  // ============================================================
-  // CSV PARSER
-  // ============================================================
 
   static List<List<String>> _parseCsv(
       String content,
@@ -1104,10 +926,6 @@ class BusRouteData {
     return result;
   }
 
-  // ============================================================
-  // COLUMN HELPERS
-  // ============================================================
-
   static int _columnIndex(
       List<String> header,
       String name,
@@ -1144,10 +962,6 @@ class BusRouteData {
   }
 }
 
-// ================================================================
-// BUS ROUTE RESULT
-// ================================================================
-
 class BusRouteResult {
   final String routeId;
   final String lineName;
@@ -1164,10 +978,6 @@ class BusRouteResult {
   });
 }
 
-// ================================================================
-// BUS STOP
-// ================================================================
-
 class _BusStop {
   final String id;
   final String name;
@@ -1177,10 +987,6 @@ class _BusStop {
     required this.name,
   });
 }
-
-// ================================================================
-// BUS ROUTE
-// ================================================================
 
 class _BusRoute {
   final String id;
@@ -1194,10 +1000,6 @@ class _BusRoute {
   });
 }
 
-// ================================================================
-// BUS TRIP
-// ================================================================
-
 class _BusTrip {
   final String routeId;
   final String tripId;
@@ -1207,10 +1009,6 @@ class _BusTrip {
     required this.tripId,
   });
 }
-
-// ================================================================
-// BUS STOP TIME
-// ================================================================
 
 class _BusStopTime {
   final String tripId;

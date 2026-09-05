@@ -14,21 +14,13 @@ class RouteData {
   static final Map<String, _Trip> _trips = {};
   static final List<_StopTime> _stopTimes = [];
 
-  // stop name -> route IDs
   static final Map<String, Set<String>> _stationRoutes = {};
 
-  // route ID -> ordered stop IDs
   static final Map<String, List<String>> _routeStations = {};
 
-  // route ID -> stop ID -> earliest known arrival time
   static final Map<String, Map<String, String>> _routeStopTimes = {};
 
-  // route ID -> set of station names
   static final Map<String, Set<String>> _routeStationNames = {};
-
-  // ============================================================
-  // LOAD GOVERNMENT GTFS DATA
-  // ============================================================
 
   static Future<void> loadData() async {
     if (_loaded) {
@@ -76,10 +68,6 @@ class RouteData {
     }
   }
 
-  // ============================================================
-  // GET GTFS STATIONS
-  // ============================================================
-
   static Future<List<String>> getStations() async {
     await loadData();
 
@@ -96,10 +84,6 @@ class RouteData {
     return stationNames;
   }
 
-  // ============================================================
-  // READ FILE FROM ZIP
-  // ============================================================
-
   static String _readFile(
       Archive archive,
       String fileName,
@@ -112,10 +96,6 @@ class RouteData {
 
     return utf8.decode(file.content as List<int>);
   }
-
-  // ============================================================
-  // PARSE STOPS
-  // ============================================================
 
   static void _parseStops(String csv) {
     final rows = _parseCsv(csv);
@@ -164,7 +144,6 @@ class RouteData {
       _stops[id] = stop;
     }
 
-    // Diagnostic output
     final checkNames = [
       'GOMBAK',
       'MASJID JAMEK',
@@ -188,10 +167,6 @@ class RouteData {
       }
     }
   }
-
-  // ============================================================
-  // PARSE ROUTES
-  // ============================================================
 
   static void _parseRoutes(String csv) {
     final rows = _parseCsv(csv);
@@ -249,10 +224,6 @@ class RouteData {
     }
   }
 
-  // ============================================================
-  // PARSE TRIPS
-  // ============================================================
-
   static void _parseTrips(String csv) {
     final rows = _parseCsv(csv);
 
@@ -292,10 +263,6 @@ class RouteData {
       );
     }
   }
-
-  // ============================================================
-  // PARSE STOP TIMES
-  // ============================================================
 
   static void _parseStopTimes(String csv) {
     final rows = _parseCsv(csv);
@@ -378,10 +345,6 @@ class RouteData {
     }
   }
 
-  // ============================================================
-  // BUILD STATION -> ROUTES
-  // ============================================================
-
   static void _buildStationRoutes() {
     _stationRoutes.clear();
 
@@ -409,8 +372,6 @@ class RouteData {
       );
     }
 
-    // Because one stop may belong to different routes,
-    // also inspect all stop times.
     for (final stopTime in _stopTimes) {
       final stop = _stops[stopTime.stopId];
       final trip = _trips[stopTime.tripId];
@@ -434,10 +395,6 @@ class RouteData {
       );
     }
   }
-
-  // ============================================================
-  // BUILD ROUTE NETWORK
-  // ============================================================
 
   static void _buildRouteNetworks() {
     _routeStations.clear();
@@ -466,8 +423,7 @@ class RouteData {
 
       final routeId = trip.routeId;
 
-      final times =
-      tripEntry.value.toList()
+      final times = tripEntry.value.toList()
         ..sort(
               (a, b) => a.sequence.compareTo(
             b.sequence,
@@ -529,10 +485,6 @@ class RouteData {
     }
   }
 
-  // ============================================================
-  // FIND ROUTES
-  // ============================================================
-
   static Future<List<RouteResult>> findRoutes(
       String from,
       String to,
@@ -585,10 +537,6 @@ class RouteData {
     print('FROM ROUTES: $fromRoutes');
     print('TO ROUTES: $toRoutes');
 
-    // ----------------------------------------------------------
-    // DIRECT ROUTE
-    // ----------------------------------------------------------
-
     final directRoutes =
     fromRoutes.intersection(
       toRoutes,
@@ -623,10 +571,6 @@ class RouteData {
 
       return results;
     }
-
-    // ----------------------------------------------------------
-    // TRANSFER ROUTE
-    // ----------------------------------------------------------
 
     print('No direct route.');
     print(
@@ -666,10 +610,6 @@ class RouteData {
     return [transferResult];
   }
 
-  // ============================================================
-  // TRANSFER BFS
-  // ============================================================
-
   static RouteResult? _findTransferRoute(
       String fromName,
       String toName,
@@ -680,7 +620,6 @@ class RouteData {
 
     final visited = <String>{};
 
-    // Start from every route serving the origin.
     for (final routeId in fromRoutes) {
       queue.add(
         _SearchNode(
@@ -707,10 +646,6 @@ class RouteData {
 
       visited.add(visitKey);
 
-      // --------------------------------------------------------
-      // Can current route reach destination?
-      // --------------------------------------------------------
-
       if (_routeStationNames[
       currentRoute]
           ?.contains(toName) ??
@@ -729,15 +664,9 @@ class RouteData {
         );
       }
 
-      // Maximum 2 transfers.
       if (current.transfers >= 2) {
         continue;
       }
-
-      // --------------------------------------------------------
-      // Find interchange stations
-      // on current route.
-      // --------------------------------------------------------
 
       final currentStations =
           _routeStationNames[
@@ -796,17 +725,12 @@ class RouteData {
     return null;
   }
 
-  // ============================================================
-  // FIND STOP
-  // ============================================================
-
   static _Stop? _findStop(
       String input,
       ) {
     final query =
     _normaliseStationName(input);
 
-    // Exact match first.
     for (final stop in _stops.values) {
       if (_normaliseStationName(
         stop.name,
@@ -816,7 +740,6 @@ class RouteData {
       }
     }
 
-    // Contains match.
     for (final stop in _stops.values) {
       final name =
       _normaliseStationName(
@@ -831,10 +754,6 @@ class RouteData {
 
     return null;
   }
-
-  // ============================================================
-  // NORMALISE STATION NAME
-  // ============================================================
 
   static String _normaliseStationName(
       String name,
@@ -856,10 +775,6 @@ class RouteData {
         .trim();
   }
 
-  // ============================================================
-  // FIND ROUTE ID FOR STOP
-  // ============================================================
-
   static String? _findRouteIdForStop(
       String stopId,
       ) {
@@ -877,10 +792,6 @@ class RouteData {
 
     return null;
   }
-
-  // ============================================================
-  // DIRECT ROUTE DURATION
-  // ============================================================
 
   static int _calculateDirectDuration(
       String routeId,
@@ -920,10 +831,6 @@ class RouteData {
     return 10;
   }
 
-  // ============================================================
-  // TRANSFER DURATION
-  // ============================================================
-
   static int _estimateTransferDuration(
       List<String> routeIds,
       int transfers,
@@ -936,10 +843,6 @@ class RouteData {
 
     return baseDuration + transferTime;
   }
-
-  // ============================================================
-  // TIME
-  // ============================================================
 
   static int _timeToMinutes(
       String time,
@@ -967,10 +870,6 @@ class RouteData {
 
     return hour * 60 + minute;
   }
-
-  // ============================================================
-  // CSV PARSER
-  // ============================================================
 
   static List<List<String>> _parseCsv(
       String csv,
@@ -1048,10 +947,6 @@ class RouteData {
   }
 }
 
-// ================================================================
-// PUBLIC RESULT MODEL
-// ================================================================
-
 class RouteResult {
   final List<String> routeIds;
   final List<String> stationNames;
@@ -1073,10 +968,6 @@ class RouteResult {
     return routeIds.join(' → ');
   }
 }
-
-// ================================================================
-// INTERNAL MODELS
-// ================================================================
 
 class _Stop {
   final String id;

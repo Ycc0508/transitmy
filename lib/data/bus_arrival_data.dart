@@ -18,10 +18,6 @@ class BusArrivalService {
   static final List<_BusStopTime> _stopTimes = [];
   static final List<_BusFrequency> _frequencies = [];
 
-  // ============================================================
-  // LOAD GOVERNMENT GTFS STATIC DATA
-  // ============================================================
-
   static Future<void> loadData() async {
     if (_loaded) {
       return;
@@ -113,10 +109,6 @@ class BusArrivalService {
     }
   }
 
-  // ============================================================
-  // GET BUS ARRIVALS
-  // ============================================================
-
   static Future<List<ArrivalData>> getArrivals(
       String stationName, {
         String? routeId,
@@ -161,10 +153,6 @@ class BusArrivalService {
 
     final List<ArrivalData> results = [];
 
-    // ==========================================================
-    // PROCESS EACH STOP TIME
-    // ==========================================================
-
     for (final stopTime in stopTimes) {
       final trip = _findTrip(
         stopTime.tripId,
@@ -174,8 +162,6 @@ class BusArrivalService {
         continue;
       }
 
-      // If Route Details gives us a route,
-      // only show that specific bus route.
       if (routeId != null &&
           routeId.trim().isNotEmpty) {
         if (!_routeMatches(
@@ -194,10 +180,6 @@ class BusArrivalService {
         route,
         trip.routeId,
       );
-
-      // ========================================================
-      // FREQUENCY-BASED SERVICE
-      // ========================================================
 
       final frequencies = _frequencies
           .where(
@@ -230,10 +212,6 @@ class BusArrivalService {
           );
         }
       } else {
-        // ======================================================
-        // NORMAL STATIC TRIP
-        // ======================================================
-
         final arrival = _parseGtfsDateTime(
           stopTime.arrivalTime,
           now,
@@ -260,10 +238,6 @@ class BusArrivalService {
       }
     }
 
-    // ==========================================================
-    // SORT BY ARRIVAL TIME
-    // ==========================================================
-
     results.sort(
           (a, b) {
         final timeA = _parseDisplayTime(
@@ -277,10 +251,6 @@ class BusArrivalService {
         return timeA.compareTo(timeB);
       },
     );
-
-    // ==========================================================
-    // REMOVE DUPLICATES
-    // ==========================================================
 
     final Set<String> seen = {};
 
@@ -296,7 +266,6 @@ class BusArrivalService {
         );
       }
 
-      // Show maximum 5 upcoming arrivals.
       if (uniqueResults.length >= 5) {
         break;
       }
@@ -318,10 +287,6 @@ class BusArrivalService {
     return uniqueResults;
   }
 
-  // ============================================================
-  // FIND STOP
-  // ============================================================
-
   static _BusStop? _findStop(
       String stationName,
       ) {
@@ -329,19 +294,11 @@ class BusArrivalService {
       stationName,
     );
 
-    // ----------------------------------------------------------
-    // 1. EXACT MATCH
-    // ----------------------------------------------------------
-
     for (final stop in _stops) {
       if (_normalise(stop.name) == target) {
         return stop;
       }
     }
-
-    // ----------------------------------------------------------
-    // 2. CONTAINS MATCH
-    // ----------------------------------------------------------
 
     for (final stop in _stops) {
       final name = _normalise(
@@ -353,10 +310,6 @@ class BusArrivalService {
         return stop;
       }
     }
-
-    // ----------------------------------------------------------
-    // 3. TOKEN MATCH
-    // ----------------------------------------------------------
 
     final targetTokens = target
         .split(' ')
@@ -391,10 +344,6 @@ class BusArrivalService {
 
     return null;
   }
-
-  // ============================================================
-  // ROUTE MATCH
-  // ============================================================
 
   static bool _routeMatches(
       String gtfsRouteId,
@@ -437,10 +386,6 @@ class BusArrivalService {
     return false;
   }
 
-  // ============================================================
-  // FIND TRIP
-  // ============================================================
-
   static _BusTrip? _findTrip(
       String tripId,
       ) {
@@ -453,10 +398,6 @@ class BusArrivalService {
     return null;
   }
 
-  // ============================================================
-  // FIND ROUTE
-  // ============================================================
-
   static _BusRoute? _findRoute(
       String routeId,
       ) {
@@ -468,10 +409,6 @@ class BusArrivalService {
 
     return null;
   }
-
-  // ============================================================
-  // GET LINE NAME
-  // ============================================================
 
   static String _getLineName(
       _BusRoute? route,
@@ -491,10 +428,6 @@ class BusArrivalService {
 
     return route.id;
   }
-
-  // ============================================================
-  // FREQUENCY CALCULATION
-  // ============================================================
 
   static DateTime? _getNextFrequencyArrival(
       String stopTime,
@@ -532,7 +465,6 @@ class BusArrivalService {
 
     DateTime candidate = baseTime;
 
-    // Move the candidate into the frequency window.
     while (candidate.isBefore(start)) {
       candidate = candidate.add(
         Duration(
@@ -541,7 +473,6 @@ class BusArrivalService {
       );
     }
 
-    // Find the next bus after the current time.
     while (candidate.isBefore(now)) {
       candidate = candidate.add(
         Duration(
@@ -556,10 +487,6 @@ class BusArrivalService {
 
     return candidate;
   }
-
-  // ============================================================
-  // PARSE GTFS TIME
-  // ============================================================
 
   static DateTime? _parseGtfsDateTime(
       String value,
@@ -603,10 +530,6 @@ class BusArrivalService {
     }
   }
 
-  // ============================================================
-  // FORMAT TIME
-  // ============================================================
-
   static String _formatTime(
       DateTime time,
       ) {
@@ -627,10 +550,6 @@ class BusArrivalService {
         '${minute.toString().padLeft(2, '0')} '
         '$period';
   }
-
-  // ============================================================
-  // PARSE DISPLAY TIME
-  // ============================================================
 
   static DateTime _parseDisplayTime(
       String value,
@@ -682,10 +601,6 @@ class BusArrivalService {
     }
   }
 
-  // ============================================================
-  // NORMALISE STATION NAME
-  // ============================================================
-
   static String _normalise(
       String value,
       ) {
@@ -719,10 +634,6 @@ class BusArrivalService {
 
     return result.trim();
   }
-
-  // ============================================================
-  // CSV LINE PARSER
-  // ============================================================
 
   static List<String> _parseCsvLine(
       String line,
@@ -759,10 +670,6 @@ class BusArrivalService {
     return result;
   }
 
-  // ============================================================
-  // CSV PARSER
-  // ============================================================
-
   static List<List<String>> _parseCsv(
       String content,
       ) {
@@ -791,10 +698,6 @@ class BusArrivalService {
     return rows;
   }
 
-  // ============================================================
-  // HEADER MAP
-  // ============================================================
-
   static Map<String, int> _headers(
       List<String> header,
       ) {
@@ -811,10 +714,6 @@ class BusArrivalService {
     return map;
   }
 
-  // ============================================================
-  // CSV VALUE
-  // ============================================================
-
   static String _value(
       List<String> row,
       Map<String, int> headers,
@@ -830,10 +729,6 @@ class BusArrivalService {
 
     return row[index].trim();
   }
-
-  // ============================================================
-  // PARSE STOPS
-  // ============================================================
 
   static void _parseStops(
       String content,
@@ -874,10 +769,6 @@ class BusArrivalService {
       );
     }
   }
-
-  // ============================================================
-  // PARSE ROUTES
-  // ============================================================
 
   static void _parseRoutes(
       String content,
@@ -926,10 +817,6 @@ class BusArrivalService {
     }
   }
 
-  // ============================================================
-  // PARSE TRIPS
-  // ============================================================
-
   static void _parseTrips(
       String content,
       ) {
@@ -969,10 +856,6 @@ class BusArrivalService {
       );
     }
   }
-
-  // ============================================================
-  // PARSE STOP TIMES
-  // ============================================================
 
   static void _parseStopTimes(
       String content,
@@ -1023,10 +906,6 @@ class BusArrivalService {
       );
     }
   }
-
-  // ============================================================
-  // PARSE FREQUENCIES
-  // ============================================================
 
   static void _parseFrequencies(
       String content,
@@ -1097,10 +976,6 @@ class BusArrivalService {
     }
   }
 }
-
-// ================================================================
-// INTERNAL MODELS
-// ================================================================
 
 class _BusStop {
   final String id;
