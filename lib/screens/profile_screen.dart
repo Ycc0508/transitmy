@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'saved_routes_screen.dart';
+import 'travel_history_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final String name;
@@ -67,6 +70,45 @@ class ProfileScreen extends StatelessWidget {
                   leading: const Icon(Icons.phone, color: primaryBlue),
                   title: const Text('Phone'),
                   subtitle: Text(phone.isNotEmpty ? phone : '-'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.bookmark_outlined, color: primaryBlue),
+                  title: const Text('Saved Routes'),
+                  subtitle: const Text('View your saved routes'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SavedRoutesScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.history, color: primaryBlue),
+                  title: const Text('Travel History'),
+                  subtitle: const Text('View past trips & activities'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TravelHistoryScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined, color: primaryBlue),
+                  title: const Text('Settings'),
+                  subtitle: const Text('App settings & preferences'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  ),
                 ),
               ],
             ),
