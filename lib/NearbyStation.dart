@@ -1,5 +1,5 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-
 
 
 
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Transport Finder',
+      title: 'Rapid Transport Finder',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
@@ -31,125 +31,132 @@ class MyApp extends StatelessWidget {
 // ======================================================
 
 class Transport {
+  final String id;
   final String name;
   final String type;
   final String line;
-  final double distance;
-  final String operatingHours;
-  final List<String> facilities;
+  final String code;
+
+  final double latitude;
+  final double longitude;
+
+  final String address;
+  final String operator;
 
   Transport({
+    required this.id,
     required this.name,
     required this.type,
     required this.line,
-    required this.distance,
-    required this.operatingHours,
-    required this.facilities,
+    required this.code,
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+    required this.operator,
   });
 }
 
 // ======================================================
-// SAMPLE DATA
+// REAL TRANSPORT DATA
+// ======================================================
+//
+// Coordinates are based on publicly available transport/
+// mapping data.
+//
+// NOTE:
+// This is a static dataset for the assignment.
+// It is NOT live GPS data.
+//
 // ======================================================
 
 final List<Transport> transportList = [
-  // ---------------- BUS STOPS ----------------
+
+  // ====================================================
+  // RAPID BUS
+  // ====================================================
 
   Transport(
-    name: 'Wangsa Maju Bus Stop',
-    type: 'Bus Stop',
-    line: 'Rapid KL',
-    distance: 0.3,
-    operatingHours: '5:30 AM - 12:00 AM',
-    facilities: [
-      'Bus Shelter',
-      'Seating',
-      'Information Board',
-    ],
+    id: 'BUS_WANGSA_MAJU',
+    name: 'LRT Wangsa Maju',
+    type: 'Bus',
+    line: 'Rapid KL Bus',
+    code: 'Wangsa Maju Bus Stop',
+    latitude: 3.20501,
+    longitude: 101.73235,
+    address: 'Wangsa Maju, Kuala Lumpur',
+    operator: 'Rapid Bus Sdn Bhd',
   ),
 
   Transport(
-    name: 'Setapak Central Bus Stop',
-    type: 'Bus Stop',
-    line: 'Rapid KL',
-    distance: 0.8,
-    operatingHours: '5:30 AM - 12:00 AM',
-    facilities: [
-      'Bus Shelter',
-      'Seating',
-    ],
+    id: 'BUS_WANGSA_MAJU_LRT',
+    name: 'Wangsa Maju LRT Bus Stop',
+    type: 'Bus',
+    line: 'Rapid KL Bus',
+    code: 'Near Wangsa Maju LRT',
+    latitude: 3.20501,
+    longitude: 101.73235,
+    address: 'Wangsa Maju, Kuala Lumpur',
+    operator: 'Rapid Bus Sdn Bhd',
   ),
 
-  Transport(
-    name: 'PV128 Bus Stop',
-    type: 'Bus Stop',
-    line: 'Rapid KL',
-    distance: 1.1,
-    operatingHours: '5:30 AM - 12:00 AM',
-    facilities: [
-      'Bus Shelter',
-      'Seating',
-      'Information Board',
-    ],
-  ),
-
-  // ---------------- LRT STATIONS ----------------
+  // ====================================================
+  // LRT
+  // ====================================================
 
   Transport(
-    name: 'Wangsa Maju LRT Station',
+    id: 'KJ3',
+    name: 'Wangsa Maju',
     type: 'LRT',
     line: 'Kelana Jaya Line',
-    distance: 1.2,
-    operatingHours: '6:00 AM - 12:00 AM',
-    facilities: [
-      'Lift',
-      'Escalator',
-      'Toilet',
-      'Parking',
-    ],
+    code: 'KJ3',
+    latitude: 3.20556,
+    longitude: 101.73139,
+    address:
+    'Jalan 1/27A, Section 2, Wangsa Maju, 53300 Kuala Lumpur',
+    operator: 'Rapid Rail',
   ),
 
   Transport(
-    name: 'Sri Rampai LRT Station',
+    id: 'KJ4',
+    name: 'Sri Rampai',
     type: 'LRT',
     line: 'Kelana Jaya Line',
-    distance: 2.0,
-    operatingHours: '6:00 AM - 12:00 AM',
-    facilities: [
-      'Lift',
-      'Escalator',
-      'Parking',
-    ],
+    code: 'KJ4',
+    latitude: 3.19889,
+    longitude: 101.73694,
+    address:
+    'Jalan Wangsa Perdana 1, Taman Sri Rampai, 53300 Kuala Lumpur',
+    operator: 'Rapid Rail',
   ),
 
   Transport(
-    name: 'Setiawangsa LRT Station',
+    id: 'KJ5',
+    name: 'Setiawangsa',
     type: 'LRT',
     line: 'Kelana Jaya Line',
-    distance: 2.5,
-    operatingHours: '6:00 AM - 12:00 AM',
-    facilities: [
-      'Lift',
-      'Escalator',
-      'Toilet',
-      'Parking',
-    ],
+    code: 'KJ5',
+    latitude: 3.17571,
+    longitude: 101.73586,
+    address:
+    'Jalan Jelatek, AU1, Taman Setiawangsa, 54200 Kuala Lumpur',
+    operator: 'Rapid Rail',
   ),
 
-  // ---------------- MRT ----------------
+  // ====================================================
+  // MRT
+  // ====================================================
 
   Transport(
-    name: 'Ampang Park MRT Station',
+    id: 'PY20',
+    name: 'Ampang Park',
     type: 'MRT',
     line: 'Putrajaya Line',
-    distance: 4.8,
-    operatingHours: '6:00 AM - 12:00 AM',
-    facilities: [
-      'Lift',
-      'Escalator',
-      'Toilet',
-      'Parking',
-    ],
+    code: 'PY20',
+    latitude: 3.15972,
+    longitude: 101.71861,
+    address:
+    'Jalan Ampang, Kuala Lumpur',
+    operator: 'Rapid Rail',
   ),
 ];
 
@@ -165,104 +172,231 @@ class TransportHomePage extends StatefulWidget {
       _TransportHomePageState();
 }
 
-class _TransportHomePageState extends State<TransportHomePage> {
+class _TransportHomePageState
+    extends State<TransportHomePage> {
+
+  // ----------------------------------------------------
+  // USER LOCATION
+  // ----------------------------------------------------
+  //
+  // Temporary reference location.
+  //
+  // Later we can replace this with actual GPS.
+  //
+  // ----------------------------------------------------
+
+  final double userLatitude = 3.2050;
+  final double userLongitude = 101.7320;
+
   String searchText = '';
 
-  final Set<String> favouriteNames = {};
+  String selectedFilter = 'All';
 
-  // ----------------------------------------------------
-  // SEARCH
-  // ----------------------------------------------------
+  final Set<String> favouriteIds = {};
 
-  List<Transport> get filteredTransport {
-    if (searchText.isEmpty) {
-      return transportList;
-    }
+  // ====================================================
+  // DISTANCE CALCULATION
+  // ====================================================
 
-    return transportList.where((transport) {
-      return transport.name
-          .toLowerCase()
-          .contains(searchText.toLowerCase()) ||
-          transport.type
-              .toLowerCase()
-              .contains(searchText.toLowerCase()) ||
-          transport.line
-              .toLowerCase()
-              .contains(searchText.toLowerCase());
-    }).toList();
+  double calculateDistance(
+      double lat1,
+      double lon1,
+      double lat2,
+      double lon2,
+      ) {
+
+    const double earthRadius = 6371;
+
+    final double dLat =
+        (lat2 - lat1) * pi / 180;
+
+    final double dLon =
+        (lon2 - lon1) * pi / 180;
+
+    final double a =
+        sin(dLat / 2) * sin(dLat / 2) +
+            cos(lat1 * pi / 180) *
+                cos(lat2 * pi / 180) *
+                sin(dLon / 2) *
+                sin(dLon / 2);
+
+    final double c =
+        2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
   }
 
-  // ----------------------------------------------------
-  // TOGGLE FAVOURITE
-  // ----------------------------------------------------
+  // ====================================================
+  // FILTER + SEARCH + SORT
+  // ====================================================
 
-  void toggleFavourite(String name) {
+  List<Transport> get filteredTransport {
+
+    List<Transport> result =
+    List.from(transportList);
+
+    // --------------------------------------------------
+    // SEARCH
+    // --------------------------------------------------
+
+    if (searchText.isNotEmpty) {
+
+      final query =
+      searchText.toLowerCase();
+
+      result = result.where((transport) {
+
+        return transport.name
+            .toLowerCase()
+            .contains(query) ||
+            transport.type
+                .toLowerCase()
+                .contains(query) ||
+            transport.line
+                .toLowerCase()
+                .contains(query) ||
+            transport.code
+                .toLowerCase()
+                .contains(query);
+
+      }).toList();
+    }
+
+    // --------------------------------------------------
+    // FILTER
+    // --------------------------------------------------
+
+    if (selectedFilter != 'All') {
+
+      result = result.where(
+            (transport) =>
+        transport.type == selectedFilter,
+      ).toList();
+    }
+
+    // --------------------------------------------------
+    // SORT BY DISTANCE
+    // --------------------------------------------------
+
+    result.sort((a, b) {
+
+      final distanceA =
+      calculateDistance(
+        userLatitude,
+        userLongitude,
+        a.latitude,
+        a.longitude,
+      );
+
+      final distanceB =
+      calculateDistance(
+        userLatitude,
+        userLongitude,
+        b.latitude,
+        b.longitude,
+      );
+
+      return distanceA.compareTo(distanceB);
+    });
+
+    return result;
+  }
+
+  // ====================================================
+  // FAVOURITE
+  // ====================================================
+
+  void toggleFavourite(String id) {
+
     setState(() {
-      if (favouriteNames.contains(name)) {
-        favouriteNames.remove(name);
+
+      if (favouriteIds.contains(id)) {
+
+        favouriteIds.remove(id);
+
       } else {
-        favouriteNames.add(name);
+
+        favouriteIds.add(id);
       }
     });
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // OPEN DETAILS
-  // ----------------------------------------------------
+  // ====================================================
 
   void openDetails(Transport transport) {
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => StopDetailsPage(
-          transport: transport,
-          isFavourite:
-          favouriteNames.contains(transport.name),
-          onFavouriteChanged: () {
-            toggleFavourite(transport.name);
-            setState(() {});
-          },
-        ),
+        builder: (context) =>
+            TransportDetailsPage(
+              transport: transport,
+              distance: calculateDistance(
+                userLatitude,
+                userLongitude,
+                transport.latitude,
+                transport.longitude,
+              ),
+              isFavourite:
+              favouriteIds.contains(
+                transport.id,
+              ),
+              onFavouriteChanged: () {
+
+                toggleFavourite(
+                  transport.id,
+                );
+              },
+            ),
       ),
     );
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // BUILD
-  // ----------------------------------------------------
+  // ====================================================
 
   @override
   Widget build(BuildContext context) {
-    final nearbyBusStops = filteredTransport
-        .where((transport) => transport.type == 'Bus Stop')
-        .toList();
 
-    final stations = filteredTransport
-        .where(
-          (transport) =>
-      transport.type == 'LRT' ||
-          transport.type == 'MRT',
-    )
-        .toList();
+    final transports =
+        filteredTransport;
 
     return Scaffold(
+
+      // ==================================================
+      // APP BAR
+      // ==================================================
+
       appBar: AppBar(
-        title: const Text('Nearby Transport'),
+
+        title: const Text(
+          'Nearby Transport',
+        ),
+
         centerTitle: true,
+
         actions: [
+
           IconButton(
-            icon: const Icon(Icons.star),
+            icon: const Icon(
+              Icons.star,
+            ),
+
             tooltip: 'Favourites',
+
             onPressed: () {
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FavouritesPage(
-                    favouriteNames: favouriteNames,
-                    onFavouriteChanged: () {
-                      setState(() {});
-                    },
-                  ),
+                  builder: (context) =>
+                      FavouritesPage(
+                        favouriteIds:
+                        favouriteIds,
+                      ),
                 ),
               );
             },
@@ -270,135 +404,293 @@ class _TransportHomePageState extends State<TransportHomePage> {
         ],
       ),
 
+      // ==================================================
+      // BODY
+      // ==================================================
+
       body: Column(
+
         children: [
-          // ==================================================
-          // SEARCH BAR
-          // ==================================================
+
+          // =================================================
+          // SEARCH
+          // =================================================
 
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding:
+            const EdgeInsets.all(16),
+
             child: TextField(
+
               onChanged: (value) {
+
                 setState(() {
+
                   searchText = value;
                 });
               },
-              decoration: InputDecoration(
-                hintText: 'Search stops or stations...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchText.isNotEmpty
+
+              decoration:
+              InputDecoration(
+
+                hintText:
+                'Search stops or stations...',
+
+                prefixIcon:
+                const Icon(
+                  Icons.search,
+                ),
+
+                suffixIcon:
+                searchText.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon:
+                  const Icon(
+                    Icons.clear,
+                  ),
+
                   onPressed: () {
+
                     setState(() {
-                      searchText = '';
+
+                      searchText =
+                      '';
                     });
                   },
                 )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
+
+                border:
+                OutlineInputBorder(
+
+                  borderRadius:
+                  BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
           ),
 
-          // ==================================================
-          // LIST
-          // ==================================================
+          // =================================================
+          // FILTER
+          // =================================================
 
-          Expanded(
+          SizedBox(
+
+            height: 50,
+
             child: ListView(
-              padding: const EdgeInsets.symmetric(
+
+              scrollDirection:
+              Axis.horizontal,
+
+              padding:
+              const EdgeInsets.symmetric(
                 horizontal: 16,
               ),
+
               children: [
-                // --------------------------------------------
-                // BUS STOPS
-                // --------------------------------------------
 
-                const Text(
-                  '🚏 Nearby Bus Stops',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
+                buildFilterChip(
+                  'All',
                 ),
 
-                const SizedBox(height: 10),
-
-                if (nearbyBusStops.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'No bus stops found.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                ...nearbyBusStops.map(
-                      (transport) => TransportCard(
-                    transport: transport,
-                    isFavourite:
-                    favouriteNames.contains(
-                      transport.name,
-                    ),
-                    onFavourite: () {
-                      toggleFavourite(transport.name);
-                    },
-                    onTap: () {
-                      openDetails(transport);
-                    },
-                  ),
+                buildFilterChip(
+                  'Bus',
                 ),
 
-                const SizedBox(height: 25),
-
-                // --------------------------------------------
-                // MRT / LRT
-                // --------------------------------------------
-
-                const Text(
-                  '🚇 MRT / LRT Stations',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
+                buildFilterChip(
+                  'LRT',
                 ),
 
-                const SizedBox(height: 10),
-
-                if (stations.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'No stations found.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                ...stations.map(
-                      (transport) => TransportCard(
-                    transport: transport,
-                    isFavourite:
-                    favouriteNames.contains(
-                      transport.name,
-                    ),
-                    onFavourite: () {
-                      toggleFavourite(transport.name);
-                    },
-                    onTap: () {
-                      openDetails(transport);
-                    },
-                  ),
+                buildFilterChip(
+                  'MRT',
                 ),
-
-                const SizedBox(height: 30),
               ],
             ),
           ),
+
+          const SizedBox(
+            height: 10,
+          ),
+
+          // =================================================
+          // RESULT COUNT
+          // =================================================
+
+          Padding(
+
+            padding:
+            const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+
+            child: Row(
+
+              children: [
+
+                Text(
+                  '${transports.length} transport locations found',
+                  style:
+                  const TextStyle(
+                    fontWeight:
+                    FontWeight.bold,
+                  ),
+                ),
+
+                const Spacer(),
+
+                const Icon(
+                  Icons.sort,
+                  size: 18,
+                ),
+
+                const SizedBox(
+                  width: 4,
+                ),
+
+                const Text(
+                  'Nearest first',
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+            height: 10,
+          ),
+
+          // =================================================
+          // LIST
+          // =================================================
+
+          Expanded(
+
+            child: transports.isEmpty
+
+                ? const Center(
+
+              child: Column(
+
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+
+                children: [
+
+                  Icon(
+                    Icons.search_off,
+                    size: 60,
+                  ),
+
+                  SizedBox(
+                    height: 15,
+                  ),
+
+                  Text(
+                    'No transport found',
+                    style:
+                    TextStyle(
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            )
+
+                : ListView.builder(
+
+              padding:
+              const EdgeInsets
+                  .symmetric(
+                horizontal: 16,
+              ),
+
+              itemCount:
+              transports.length,
+
+              itemBuilder:
+                  (context, index) {
+
+                final transport =
+                transports[index];
+
+                final distance =
+                calculateDistance(
+                  userLatitude,
+                  userLongitude,
+                  transport.latitude,
+                  transport.longitude,
+                );
+
+                return TransportCard(
+
+                  transport:
+                  transport,
+
+                  distance:
+                  distance,
+
+                  isFavourite:
+                  favouriteIds
+                      .contains(
+                    transport.id,
+                  ),
+
+                  onFavourite: () {
+
+                    toggleFavourite(
+                      transport.id,
+                    );
+                  },
+
+                  onTap: () {
+
+                    openDetails(
+                      transport,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // ====================================================
+  // FILTER CHIP
+  // ====================================================
+
+  Widget buildFilterChip(
+      String filter,
+      ) {
+
+    final bool selected =
+        selectedFilter == filter;
+
+    return Padding(
+
+      padding:
+      const EdgeInsets.only(
+        right: 8,
+      ),
+
+      child: FilterChip(
+
+        label: Text(filter),
+
+        selected: selected,
+
+        onSelected: (value) {
+
+          setState(() {
+
+            selectedFilter =
+                filter;
+          });
+        },
       ),
     );
   }
@@ -408,68 +700,122 @@ class _TransportHomePageState extends State<TransportHomePage> {
 // TRANSPORT CARD
 // ======================================================
 
-class TransportCard extends StatelessWidget {
+class TransportCard
+    extends StatelessWidget {
+
   final Transport transport;
+
+  final double distance;
+
   final bool isFavourite;
+
   final VoidCallback onFavourite;
+
   final VoidCallback onTap;
 
   const TransportCard({
+
     super.key,
+
     required this.transport,
+
+    required this.distance,
+
     required this.isFavourite,
+
     required this.onFavourite,
+
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final bool isBus = transport.type == 'Bus Stop';
+  Widget build(
+      BuildContext context,
+      ) {
+
+    IconData icon;
+
+    if (transport.type == 'Bus') {
+
+      icon =
+          Icons.directions_bus;
+
+    } else {
+
+      icon = Icons.train;
+    }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+
+      margin:
+      const EdgeInsets.only(
+        bottom: 10,
+      ),
+
       child: ListTile(
+
         onTap: onTap,
 
-        leading: CircleAvatar(
-          child: Icon(
-            isBus
-                ? Icons.directions_bus
-                : Icons.train,
-          ),
+        leading:
+        CircleAvatar(
+
+          child:
+          Icon(icon),
         ),
 
         title: Text(
+
           transport.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+
+          style:
+          const TextStyle(
+            fontWeight:
+            FontWeight.bold,
           ),
         ),
 
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        subtitle:
+        Column(
+
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+
           children: [
-            const SizedBox(height: 4),
 
-            Text(transport.line),
-
-            const SizedBox(height: 4),
+            const SizedBox(
+              height: 4,
+            ),
 
             Text(
-              '${transport.distance.toStringAsFixed(1)} km away',
+              '${transport.type} • ${transport.line}',
+            ),
+
+            const SizedBox(
+              height: 4,
+            ),
+
+            Text(
+              '${distance.toStringAsFixed(2)} km away',
             ),
           ],
         ),
 
-        isThreeLine: true,
+        isThreeLine:
+        true,
 
-        trailing: IconButton(
-          icon: Icon(
+        trailing:
+        IconButton(
+
+          icon:
+          Icon(
+
             isFavourite
                 ? Icons.star
                 : Icons.star_border,
           ),
-          onPressed: onFavourite,
+
+          onPressed:
+          onFavourite,
         ),
       ),
     );
@@ -480,121 +826,272 @@ class TransportCard extends StatelessWidget {
 // DETAILS PAGE
 // ======================================================
 
-class StopDetailsPage extends StatelessWidget {
-  final Transport transport;
-  final bool isFavourite;
-  final VoidCallback onFavouriteChanged;
+class TransportDetailsPage
+    extends StatelessWidget {
 
-  const StopDetailsPage({
+  final Transport transport;
+
+  final double distance;
+
+  final bool isFavourite;
+
+  final VoidCallback
+  onFavouriteChanged;
+
+  const TransportDetailsPage({
+
     super.key,
+
     required this.transport,
+
+    required this.distance,
+
     required this.isFavourite,
+
     required this.onFavouriteChanged,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
+
     final bool isBus =
-        transport.type == 'Bus Stop';
+        transport.type == 'Bus';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transport Details'),
+
+      appBar:
+      AppBar(
+
+        title:
+        const Text(
+          'Transport Details',
+        ),
+
         actions: [
+
           IconButton(
-            icon: Icon(
+
+            icon:
+            Icon(
+
               isFavourite
                   ? Icons.star
                   : Icons.star_border,
             ),
-            onPressed: onFavouriteChanged,
+
+            onPressed:
+            onFavouriteChanged,
           ),
         ],
       ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body:
+      ListView(
+
+        padding:
+        const EdgeInsets.all(
+          20,
+        ),
+
         children: [
-          // ------------------------------------------------
+
+          // ==============================================
           // ICON
-          // ------------------------------------------------
+          // ==============================================
 
           CircleAvatar(
+
             radius: 45,
-            child: Icon(
+
+            child:
+            Icon(
+
               isBus
                   ? Icons.directions_bus
                   : Icons.train,
+
               size: 45,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(
+            height: 20,
+          ),
 
-          // ------------------------------------------------
+          // ==============================================
           // NAME
-          // ------------------------------------------------
+          // ==============================================
 
           Text(
+
             transport.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
+
+            textAlign:
+            TextAlign.center,
+
+            style:
+            const TextStyle(
+
+              fontSize: 26,
+
+              fontWeight:
+              FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 8,
+          ),
 
           Text(
+
             transport.type,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
+
+            textAlign:
+            TextAlign.center,
+
+            style:
+            const TextStyle(
               fontSize: 17,
             ),
           ),
 
-          const SizedBox(height: 30),
+          const SizedBox(
+            height: 30,
+          ),
 
-          // ------------------------------------------------
+          // ==============================================
           // INFORMATION
-          // ------------------------------------------------
+          // ==============================================
 
           InfoTile(
-            icon: Icons.route,
-            title: 'Line / Operator',
-            value: transport.line,
-          ),
 
-          InfoTile(
-            icon: Icons.location_on,
-            title: 'Distance',
+            icon:
+            Icons.confirmation_number,
+
+            title:
+            'Station / Stop Code',
+
             value:
-            '${transport.distance.toStringAsFixed(1)} km',
+            transport.code,
           ),
 
           InfoTile(
-            icon: Icons.access_time,
-            title: 'Operating Hours',
-            value: transport.operatingHours,
+
+            icon:
+            Icons.route,
+
+            title:
+            'Line',
+
+            value:
+            transport.line,
           ),
 
-          const SizedBox(height: 20),
+          InfoTile(
 
-          const Text(
-            'Facilities',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            icon:
+            Icons.business,
+
+            title:
+            'Operator',
+
+            value:
+            transport.operator,
           ),
 
-          const SizedBox(height: 10),
+          InfoTile(
 
-          ...transport.facilities.map(
-                (facility) => ListTile(
-              leading: const Icon(Icons.check_circle),
-              title: Text(facility),
+            icon:
+            Icons.location_on,
+
+            title:
+            'Distance',
+
+            value:
+            '${distance.toStringAsFixed(2)} km',
+          ),
+
+          InfoTile(
+
+            icon:
+            Icons.place,
+
+            title:
+            'Address',
+
+            value:
+            transport.address,
+          ),
+
+          InfoTile(
+
+            icon:
+            Icons.gps_fixed,
+
+            title:
+            'Coordinates',
+
+            value:
+            '${transport.latitude}, '
+                '${transport.longitude}',
+          ),
+
+          const SizedBox(
+            height: 20,
+          ),
+
+          // ==============================================
+          // SOURCE NOTE
+          // ==============================================
+
+          Card(
+
+            child:
+            Padding(
+
+              padding:
+              const EdgeInsets.all(
+                16,
+              ),
+
+              child:
+              Row(
+
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+
+                children: [
+
+                  const Icon(
+                    Icons.info_outline,
+                  ),
+
+                  const SizedBox(
+                    width: 12,
+                  ),
+
+                  Expanded(
+
+                    child:
+                    Text(
+
+                      'Transport information is '
+                          'based on publicly available '
+                          'Rapid KL / Prasarana transport '
+                          'data.',
+
+                      style:
+                      TextStyle(
+                        color:
+                        Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -607,29 +1104,64 @@ class StopDetailsPage extends StatelessWidget {
 // INFO TILE
 // ======================================================
 
-class InfoTile extends StatelessWidget {
+class InfoTile
+    extends StatelessWidget {
+
   final IconData icon;
+
   final String title;
+
   final String value;
 
   const InfoTile({
+
     super.key,
+
     required this.icon,
+
     required this.title,
+
     required this.value,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
+
     return Card(
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
+
+      margin:
+      const EdgeInsets.only(
+        bottom: 8,
+      ),
+
+      child:
+      ListTile(
+
+        leading:
+        Icon(icon),
+
+        title:
+        Text(
+          title,
+          style:
+          const TextStyle(
+            fontWeight:
+            FontWeight.bold,
           ),
+        ),
+
+        subtitle:
+        Padding(
+
+          padding:
+          const EdgeInsets.only(
+            top: 4,
+          ),
+
+          child:
+          Text(value),
         ),
       ),
     );
@@ -640,93 +1172,161 @@ class InfoTile extends StatelessWidget {
 // FAVOURITES PAGE
 // ======================================================
 
-class FavouritesPage extends StatefulWidget {
-  final Set<String> favouriteNames;
-  final VoidCallback onFavouriteChanged;
+class FavouritesPage
+    extends StatefulWidget {
+
+  final Set<String>
+  favouriteIds;
 
   const FavouritesPage({
+
     super.key,
-    required this.favouriteNames,
-    required this.onFavouriteChanged,
+
+    required this.favouriteIds,
   });
 
   @override
-  State<FavouritesPage> createState() =>
+  State<FavouritesPage>
+  createState() =>
       _FavouritesPageState();
 }
 
 class _FavouritesPageState
     extends State<FavouritesPage> {
 
-  void removeFavourite(String name) {
-    setState(() {
-      widget.favouriteNames.remove(name);
-    });
+  void removeFavourite(
+      String id,
+      ) {
 
-    widget.onFavouriteChanged();
+    setState(() {
+
+      widget.favouriteIds
+          .remove(id);
+    });
   }
 
   @override
-  Widget build(BuildContext context) {
-    final favourites = transportList
+  Widget build(
+      BuildContext context,
+      ) {
+
+    final favourites =
+    transportList
         .where(
           (transport) =>
-          widget.favouriteNames.contains(
-            transport.name,
+          widget.favouriteIds
+              .contains(
+            transport.id,
           ),
     )
         .toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Favourite Stops'),
+
+      appBar:
+      AppBar(
+
+        title:
+        const Text(
+          'Favourite Transport',
+        ),
       ),
 
-      body: favourites.isEmpty
+      body:
+
+      favourites.isEmpty
+
           ? const Center(
-        child: Column(
+
+        child:
+        Column(
+
           mainAxisAlignment:
-          MainAxisAlignment.center,
+          MainAxisAlignment
+              .center,
+
           children: [
+
             Icon(
               Icons.star_border,
               size: 70,
             ),
-            SizedBox(height: 15),
+
+            SizedBox(
+              height: 15,
+            ),
+
             Text(
-              'No favourite stops yet.',
-              style: TextStyle(
+              'No favourites yet',
+              style:
+              TextStyle(
                 fontSize: 18,
               ),
             ),
           ],
         ),
       )
+
           : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: favourites.length,
-        itemBuilder: (context, index) {
-          final transport = favourites[index];
+
+        padding:
+        const EdgeInsets.all(
+          16,
+        ),
+
+        itemCount:
+        favourites.length,
+
+        itemBuilder:
+            (context, index) {
+
+          final transport =
+          favourites[index];
 
           return TransportCard(
-            transport: transport,
-            isFavourite: true,
+
+            transport:
+            transport,
+
+            distance:
+            0,
+
+            isFavourite:
+            true,
+
             onFavourite: () {
+
               removeFavourite(
-                transport.name,
+                transport.id,
               );
             },
+
             onTap: () {
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      StopDetailsPage(
-                        transport: transport,
-                        isFavourite: true,
-                        onFavouriteChanged: () {
+                  builder:
+                      (context) =>
+                      TransportDetailsPage(
+                        transport:
+                        transport,
+
+                        distance:
+                        0,
+
+                        isFavourite:
+                        true,
+
+                        onFavouriteChanged:
+                            () {
+
                           removeFavourite(
-                            transport.name,
+                            transport.id,
+                          );
+
+                          Navigator.pop(
+                            context,
                           );
                         },
                       ),
